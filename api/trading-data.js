@@ -1,4 +1,3 @@
-
 // Persistent state in global scope to survive some serverless restarts
 const getGlobalState = () => {
   const g = (typeof global !== 'undefined' ? global : {});
@@ -37,11 +36,12 @@ export default async function handler(req, res) {
           body = JSON.parse(body);
         } catch (e) {
           console.error('[API] Failed to parse string body:', body.substring(0, 100));
+          return res.status(400).json({ error: 'Invalid JSON', status: 'error' });
         }
       }
       
       body = body || {};
-      console.log("Received:", body);
+      console.log("[API] Received:", JSON.stringify(body, null, 2));
     }
 
     // Security Check (Case-insensitive)
@@ -89,8 +89,18 @@ export default async function handler(req, res) {
         return res.status(200).json({ status: 'ok', confirmed: !!ticket, ticket_id: ticket });
       }
 
+      // ✅ CORRIGÉ: Retourne les données financières réelles du cache
+      const cachedData = cache[effective_id] || {};
+      
+      // Données par défaut si pas encore de données reçues
       const defaultData = { 
-        balance: 0, equity: 0, profit: 0, lastUpdate: 0, positions: [],
+        balance: 0, 
+        equity: 0, 
+        profit: 0, 
+        margin: 0,
+        margin_free: 0,
+        lastUpdate: 0, 
+        positions: [],
         symbols: [
           { name: 'EURUSD', bid: 1.0850, ask: 1.0852, spread: 2, volume: 100 },
           { name: 'GBPUSD', bid: 1.2650, ask: 1.2653, spread: 3, volume: 80 },
@@ -98,10 +108,29 @@ export default async function handler(req, res) {
         ]
       };
       
-      const cachedData = cache[effective_id] || {};
-      const data = { ...defaultData, ...cachedData };
+      // Fusion des données avec priorité au cache
+      const data = { 
+        ...defaultData, 
+        ...cachedData,
+        // ✅ Assure que les champs financiers sont toujours présents et numériques
+        balance: parseFloat(cachedData.balance) || 0,
+        equity: parseFloat(cachedData.equity) || 0,
+        profit: parseFloat(cachedData.profit) || 0,
+        margin: parseFloat(cachedData.margin) || 0,
+        margin_free: parseFloat(cachedData.margin_free) || 0,
+        account_id: effective_id
+      };
+      
       const isLive = (Date.now() - (data.lastUpdate || 0)) < 30000;
-      return res.status(200).json({ ...data, isLive, status: 'ok' });
+      
+      console.log(`[API] GET account ${effective_id}: Balance=${data.balance}, Equity=${data.equity}, Profit=${data.profit}, isLive=${isLive}`);
+      
+      return res.status(200).json({ 
+        ...data, 
+        isLive, 
+        status: 'ok',
+        account_id: effective_id
+      });
     }
 
     // --- GESTION DES REQUÊTES POST ---
@@ -149,9 +178,9 @@ export default async function handler(req, res) {
         return res.status(200).json({ status: 'ok', received: true, confirmed: true, timestamp: Math.floor(Date.now() / 1000) });
       }
 
-      // Sync balance/equity (The main real-time data from EA)
-      if (body.balance !== undefined || body.symbols || body.equity !== undefined) {
-        const currentCache = cache[effective_id] || { balance: 0, equity: 0, profit: 0, symbols: [] };
+      // ✅ CORRIGÉ: Sync balance/equity/profit avec validation des données
+      if (body.balance !== undefined || body.equity !== undefined || body.profit !== undefined || body.symbols) {
+        const currentCache = cache[effective_id] || { balance: 0, equity: 0, profit: 0, margin: 0, margin_free: 0, symbols: [] };
         
         let rawSymbols = body.symbols || currentCache.symbols || [];
         if (!Array.isArray(rawSymbols)) rawSymbols = [];
@@ -159,32 +188,48 @@ export default async function handler(req, res) {
         // Convert string symbols to objects if necessary
         const processedSymbols = rawSymbols.map(s => {
           if (typeof s === 'string') {
-            return {
-              name: s,
-              bid: 0,
-              ask: 0,
-              spread: 0,
-              volume: 0
-            };
+            return { name: s, bid: 0, ask: 0, spread: 0, volume: 0 };
           }
           return s;
         });
 
+        // ✅ CORRIGÉ: Extraction et conversion des valeurs financières
+        const newBalance = body.balance !== undefined ? parseFloat(body.balance) : currentCache.balance;
+        const newEquity = body.equity !== undefined ? parseFloat(body.equity) : (body.balance !== undefined ? newBalance : currentCache.equity);
+        const newProfit = body.profit !== undefined ? parseFloat(body.profit) : currentCache.profit;
+        const newMargin = body.margin !== undefined ? parseFloat(body.margin) : currentCache.margin;
+        const newMarginFree = body.margin_free !== undefined ? parseFloat(body.margin_free) : currentCache.margin_free;
+
         cache[effective_id] = { 
           ...currentCache,
-          ...body, // Capture everything else in the body
-          balance: body.balance !== undefined ? parseFloat(body.balance) : (currentCache.balance || 0), 
-          equity: body.equity !== undefined ? parseFloat(body.equity) : (body.balance !== undefined ? parseFloat(body.balance) : (currentCache.equity || 0)), 
-          profit: body.profit !== undefined ? parseFloat(body.profit) : (currentCache.profit || 0),
+          account_id: effective_id,
+          balance: newBalance, 
+          equity: newEquity, 
+          profit: newProfit,
+          margin: newMargin,
+          margin_free: newMarginFree,
           symbols: processedSymbols,
-          lastUpdate: Date.now() 
+          lastUpdate: Date.now(),
+          // ✅ Ajout d'un timestamp lisible pour debug
+          lastUpdateFormatted: new Date().toISOString()
         };
         
-        console.log(`[API] Synced account ${effective_id}: Balance=${cache[effective_id].balance}, Symbols=${processedSymbols.length}`);
-        return res.status(200).json({ status: 'ok', received: true, synced: true, timestamp: Math.floor(Date.now() / 1000) });
+        console.log(`[API] ✅ SYNCED account ${effective_id}: Balance=${newBalance}, Equity=${newEquity}, Profit=${newProfit}, Margin=${newMargin}, Free=${newMarginFree}`);
+        
+        return res.status(200).json({ 
+          status: 'ok', 
+          received: true, 
+          synced: true, 
+          account_id: effective_id,
+          balance: newBalance,
+          equity: newEquity,
+          profit: newProfit,
+          timestamp: Math.floor(Date.now() / 1000) 
+        });
       }
 
-      // Default success response for any other POST to avoid 500/400 if EA sends something unexpected
+      // Default success response
+      console.log(`[API] Generic POST received for ${effective_id}:`, body);
       return res.status(200).json({ status: 'ok', received: true, timestamp: Math.floor(Date.now() / 1000) });
     }
 
