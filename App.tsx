@@ -26,7 +26,9 @@ import { FAQ } from './src/components/FAQ';
 import { ASSET_CONFIGS, calculateLots } from './constants';
 import { FeedbackSystem } from './src/components/FeedbackSystem';
 import { DashboardContent } from './src/components/DashboardContent';
-import { useMT5 } from './src/hooks/useMT5';
+import { useSentinelRealtime } from './src/hooks/useSentinelRealtime';
+import { EmotionalEngine } from './src/services/EmotionalEngine';
+import { DebugPanel } from './src/components/DebugPanel';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 interface Vitals {
@@ -199,36 +201,66 @@ export default function App() {
   const [accountData, setAccountData] = useState<AccountData | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
 
-  // Use robust MT5 hook
-  const { ticks, positions: mt5Positions, accountData: mt5AccountData, isConnected: isMT5SocketConnected, isDemoMode, marketData } = useMT5(activeAssets, (pos, oldSl) => {
-    // EXTERNAL VIOLATION DETECTED
-    setNotification("TENTATIVE DE VIOLATION EXTERNE BLOQUÉE");
-    applyDisciplinePenalty("Recul du Stop Loss (Externe)");
-    
-    // IMMEDIATE CORRECTION
-    updatePosition(pos.id, oldSl, pos.tp);
-  });
+  // Use real-time Sentinel hook
+  const sentinelState = useSentinelRealtime("THA-5234-OBA", "OWENkeya2015.com");
+
+  // Derived variables for compatibility
+  const ticks = sentinelState.ticks;
+  const mt5Positions = sentinelState.positions;
+  const isDemoMode = false; // Real-time mode is not demo
+  const marketData = {
+    ...sentinelState.ticks,
+    isLive: sentinelState.isConnected,
+    lastUpdate: sentinelState.lastUpdate,
+    symbols: Object.keys(sentinelState.ticks)
+  } as any;
 
   // Sync mt5Connected with actual connection status
   useEffect(() => {
-    setMt5Connected(isMT5SocketConnected);
-  }, [isMT5SocketConnected]);
+    setMt5Connected(sentinelState.isConnected);
+  }, [sentinelState.isConnected]);
 
+  // Update Emotional Engine and Sentinel Data
   useEffect(() => {
-    if (mt5AccountData) {
-      console.log("[APP DEBUG] Syncing account data:", mt5AccountData);
-      setAccountData(prev => ({
-        ...(prev || {
-          id: mt5AccountData.id,
-          platform: 'MT5',
-          server: 'Thalamus-Live-Server',
-          status: 'CONNECTED'
-        }),
-        ...mt5AccountData,
-        profit: positions.reduce((acc, p) => acc + p.profit, 0) || mt5AccountData.profit
-      } as AccountData));
+    if (sentinelState.isConnected) {
+      const metrics = EmotionalEngine.calculate(sentinelState);
+      
+      setSentinelData(prev => ({
+        ...prev,
+        disciplineScore: metrics.disciplineScore,
+        dangerIndex: metrics.dangerIndex,
+        detectedBiases: metrics.detectedBiases,
+        emotionState: {
+          ...prev.emotionState,
+          intensity: metrics.intensity,
+          dominantEmotion: metrics.intensity > 70 ? 'FOMO' : metrics.intensity > 40 ? 'Euphoria' : 'Calm',
+          lastUpdate: new Date().toISOString()
+        }
+      }));
+
+      setCycleData(prev => ({
+        ...prev,
+        currentMode: metrics.mode
+      }));
+
+      setAccountData({
+        id: "THA-5234-OBA",
+        platform: 'MT5',
+        server: 'Thalamus-Live-Server',
+        balance: sentinelState.balance,
+        equity: sentinelState.equity,
+        profit: sentinelState.profit,
+        currency: 'USD',
+        status: 'CONNECTED'
+      });
+
+      setPositions(sentinelState.positions.map(p => ({
+        ...p,
+        currentPrice: sentinelState.ticks[p.symbol]?.bid || p.openPrice,
+        timestamp: p.timestamp || new Date().toISOString()
+      })));
     }
-  }, [mt5AccountData, positions]);
+  }, [sentinelState]);
 
   const [isSecondaryBarOpen, setIsSecondaryBarOpen] = useState(false);
   const [showMarketDropdown, setShowMarketDropdown] = useState(false);
@@ -1206,6 +1238,8 @@ export default function App() {
             hasSL={hasSL}
             disciplineScore={sentinelData.disciplineScore}
             mt5Connected={mt5Connected}
+            lastUpdate={sentinelState.lastUpdate}
+            latency={sentinelState.latency}
           >
           <div className="h-full flex flex-row overflow-hidden">
             {/* LEFT DRAWER: MARKETS */}
@@ -2423,6 +2457,10 @@ export default function App() {
           }}
         />
       )}
+      <DebugPanel 
+        sentinelState={sentinelState} 
+        metrics={EmotionalEngine.calculate(sentinelState)} 
+      />
     </div>
   );
 }
