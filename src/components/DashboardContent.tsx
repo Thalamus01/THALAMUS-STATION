@@ -15,6 +15,8 @@ interface DashboardContentProps {
   hasSL: boolean;
   disciplineScore: number;
   mt5Connected: boolean;
+  lastUpdate: number;
+  latency: number;
   children: React.ReactNode;
 }
 
@@ -29,6 +31,8 @@ export const DashboardContent: React.FC<DashboardContentProps> = React.memo(({
   hasSL,
   disciplineScore,
   mt5Connected,
+  lastUpdate,
+  latency,
   children
 }) => {
   // Guard against null/undefined data
@@ -37,6 +41,17 @@ export const DashboardContent: React.FC<DashboardContentProps> = React.memo(({
   const rawCurrency = accountData?.currency || 'USD';
   const currencySymbol = rawCurrency === 'EUR' ? '€' : rawCurrency === 'USD' ? '$' : rawCurrency;
   const positionsCount = positions?.length || 0;
+
+  const [timeAgo, setTimeAgo] = React.useState(0);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeAgo((Date.now() - lastUpdate) / 1000);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [lastUpdate]);
+
+  const freshnessColor = timeAgo < 1 ? 'text-emerald-500' : timeAgo < 5 ? 'text-amber-500' : 'text-red-500';
 
   console.log("[DASHBOARD DEBUG] Rendering with:", { 
     balance, 
@@ -120,15 +135,26 @@ export const DashboardContent: React.FC<DashboardContentProps> = React.memo(({
         </div>
         
         <div className="flex items-center gap-6">
-          <div className="text-[12px] uppercase tracking-[1.5px] text-[#666] flex items-center gap-2">
-            <ShieldCheck size={12} strokeWidth={1.5} className={mt5Connected ? "text-emerald-500" : "text-red-500"} />
-            {mt5Connected && (
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[9px] font-black animate-pulse">
-                <div className="w-1 h-1 rounded-full bg-emerald-500" />
-                LIVE
+          <div className="text-[12px] uppercase tracking-[1.5px] text-[#666] flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full animate-pulse ${timeAgo < 1 ? 'bg-emerald-500' : timeAgo < 5 ? 'bg-amber-500' : 'bg-red-500'}`} />
+              <span className={`text-[10px] font-mono ${freshnessColor}`}>
+                {timeAgo < 0.1 ? 'LIVE' : `Mis à jour il y a ${timeAgo.toFixed(1)}s`}
               </span>
-            )}
-            Positions actives: <span className="text-[#F5F5F0]">{positionsCount}</span>
+              <span className="text-[9px] text-[#444] font-mono ml-1">
+                ({latency}ms)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={12} strokeWidth={1.5} className={mt5Connected ? "text-emerald-500" : "text-red-500"} />
+              {mt5Connected && (
+                <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[9px] font-black animate-pulse">
+                  <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                  LIVE
+                </span>
+              )}
+              Positions actives: <span className="text-[#F5F5F0]">{positionsCount}</span>
+            </div>
             {!mt5Connected && (
               <span className="ml-4 px-3 py-1 bg-red-500/10 border border-red-500/30 text-red-500 rounded-lg text-[10px] font-black animate-pulse">
                 MT5 DÉCONNECTÉ
