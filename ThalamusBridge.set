@@ -1,0 +1,13 @@
+; ThalamusBridge Configuration
+; Sentinel Protocol v2.0
+
+InpServerHost=thalamus.ai
+InpServerPort=8443
+InpThalamusKey=0123456789ABCDEF0123456789ABCDEF
+InpHeartbeatSec=2
+InpStrictMode=1
+InpAllowedIPs=
+InpAntiReculActive=1
+InpSlippageMax=3.0
+InpMagicNumber=123456789
+InpMaxDailyLoss=5.0

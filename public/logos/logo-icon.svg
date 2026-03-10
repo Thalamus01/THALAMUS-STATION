@@ -1,0 +1,21 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="gold-glow-icon" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.83 0 0 0 0 0.68 0 0 0 0 0.21 0 0 0 1 0" />
+      <feComposite in="SourceGraphic" operator="over" />
+    </filter>
+    <linearGradient id="pure-gold-icon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F4E4BC" />
+      <stop offset="50%" stop-color="#D4AF37" />
+      <stop offset="100%" stop-color="#B8860B" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Luminous Brain Silhouette - Scaled up to fill more space -->
+  <g transform="translate(5, 5) scale(0.22)" filter="url(#gold-glow-icon)">
+    <path d="M180 200C140 200 120 230 120 260C120 300 150 320 180 320C180 340 200 360 230 360C250 360 256 350 256 340C256 350 262 360 282 360C312 360 332 340 332 320C362 320 392 300 392 260C392 230 372 200 332 200" stroke="#D4AF37" stroke-width="6" fill="none" opacity="0.7"/>
+    <path d="M332 200C372 200 392 230 392 260C392 300 362 320 332 320C332 340 312 360 282 360C262 360 256 350 256 340C256 350 250 360 230 360C200 360 180 340 180 320C150 320 120 300 120 260C120 230 140 200 180 200" stroke="#D4AF37" stroke-width="6" fill="none" opacity="0.7"/>
+    <path d="M180 180H332V220H276V380H236V220H180V180Z" fill="url(#pure-gold-icon)" />
+  </g>
+</svg>

@@ -1,0 +1,10 @@
+{
+  "name": "THALAMUS OBA FINAL",
+  "description": "Système de Neuro-Trading avec exécution sécurisée par RMSSD et Handshake Neural.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation",
+    "bluetooth"
+  ]
+}

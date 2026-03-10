@@ -1,0 +1,52 @@
+<svg width="400" height="100" viewBox="0 0 400 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- High-end Golden Glow -->
+    <filter id="gold-glow-ultra" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.83 0 0 0 0 0.68 0 0 0 0 0.21 0 0 0 1 0" />
+      <feComposite in="SourceGraphic" operator="over" />
+    </filter>
+    
+    <!-- Bevel Effect for the T -->
+    <filter id="bevel" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="0.5" result="blur" />
+      <feSpecularLighting surfaceScale="5" specularConstant="0.8" specularExponent="20" lighting-color="#F4E4BC" in="blur" result="specular">
+        <fePointLight x="-50" y="-50" z="100" />
+      </feSpecularLighting>
+      <feComposite in="specular" in2="SourceGraphic" operator="in" result="composite" />
+      <feComposite in="SourceGraphic" in2="composite" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" />
+    </filter>
+
+    <linearGradient id="gold-gradient-rich" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F4E4BC" />
+      <stop offset="20%" stop-color="#D4AF37" />
+      <stop offset="50%" stop-color="#FFD700" />
+      <stop offset="80%" stop-color="#D4AF37" />
+      <stop offset="100%" stop-color="#8B7355" />
+    </linearGradient>
+  </defs>
+
+  <!-- Luminous Brain (Neural Network style) -->
+  <g transform="translate(10, 10) scale(0.18)" filter="url(#gold-glow-ultra)">
+    <!-- Left Lobe -->
+    <path d="M180 220C140 220 110 250 110 290C110 330 140 360 180 360C180 380 200 400 230 400C250 400 260 390 260 380C260 390 270 400 290 400C320 400 340 380 340 350C370 350 400 330 400 290C400 250 370 220 330 220" stroke="#D4AF37" stroke-width="4" fill="none" opacity="0.6"/>
+    <path d="M190 240C160 240 140 260 140 290C140 320 160 340 190 340" stroke="#D4AF37" stroke-width="2" fill="none" opacity="0.4"/>
+    <!-- Right Lobe -->
+    <path d="M330 220C370 220 400 250 400 290C400 330 370 360 330 360C330 380 310 400 280 400C260 400 250 390 250 380C250 390 240 400 220 400C190 400 170 380 170 350C140 350 110 330 110 290C110 250 140 220 180 220" stroke="#D4AF37" stroke-width="4" fill="none" opacity="0.6"/>
+    
+    <!-- Neural Connections (Dots) -->
+    <circle cx="150" cy="270" r="3" fill="#D4AF37" />
+    <circle cx="360" cy="270" r="3" fill="#D4AF37" />
+    <circle cx="200" cy="380" r="3" fill="#D4AF37" />
+    <circle cx="310" cy="380" r="3" fill="#D4AF37" />
+    <circle cx="255" cy="230" r="4" fill="#D4AF37" />
+  </g>
+
+  <!-- The Golden T -->
+  <g transform="translate(10, 10) scale(0.18)" filter="url(#gold-glow-ultra)">
+    <path d="M180 200H332V240H276V400H236V240H180V200Z" fill="url(#gold-gradient-rich)" filter="url(#bevel)"/>
+  </g>
+
+  <!-- Text: THALAMUS -->
+  <text x="110" y="62" fill="#F5F5F0" style="font-family: 'Cinzel', serif; font-size: 48px; font-weight: 900; letter-spacing: 0.25em;" filter="url(#gold-glow-ultra)">THALAMUS</text>
+</svg>
