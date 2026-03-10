@@ -1,3 +1,4 @@
+
 // Persistent state in global scope to survive some serverless restarts
 const getGlobalState = () => {
   const g = (typeof global !== 'undefined' ? global : {});
@@ -25,56 +26,38 @@ export default async function handler(req, res) {
     
     // --- PARSING ROBUSTE DU BODY ---
     if (req.method === 'POST') {
+      // Handle Buffer (common in some serverless environments)
       if (Buffer.isBuffer(body)) {
         body = body.toString('utf8');
       }
+
+      // Handle cases where body might be a string (common with MT5 WebRequest)
       if (typeof body === 'string') {
         try {
           body = JSON.parse(body);
         } catch (e) {
           console.error('[API] Failed to parse string body:', body.substring(0, 100));
-          return res.status(400).json({ error: 'Invalid JSON', status: 'error' });
         }
       }
+      
       body = body || {};
-      console.log("[API] POST Received:", JSON.stringify(body, null, 2));
+      console.log("Received:", body);
     }
 
-    // ✅ CORRIGÉ: Lecture de la clé depuis headers, body ET query params (GET)
-    const providedKey = (
-      req.headers['x-thalamus-key'] || 
-      req.headers['X-Thalamus-Key'] ||
-      (body && body.key) || 
-      req.query.key || 
-      ""
-    ).toString().toLowerCase().trim();
-    
-    const serverKey = (
-      process.env.THALAMUS_KEY || 
-      process.env.VITE_THALAMUS_KEY || 
-      "OWENkeya2015.com"
-    ).toLowerCase().trim();
-    
-    console.log(`[API] Key check: provided="${providedKey}", server="${serverKey}"`);
+    // Security Check (Case-insensitive)
+    const providedKey = (req.headers['x-thalamus-key'] || (body && body.key) || "").toString().toLowerCase();
+    const serverKey = (process.env.THALAMUS_KEY || process.env.VITE_THALAMUS_KEY || "OWENkeya2015.com").toLowerCase();
     
     if (serverKey && providedKey !== serverKey) {
-      console.warn('[API] ❌ Unauthorized. Provided key:', providedKey, '| Expected:', serverKey);
-      return res.status(401).json({ 
-        error: 'Invalid key', 
-        status: 'error', 
-        received: providedKey,
-        expected: serverKey 
-      });
+      console.warn('[API] Unauthorized access attempt with key:', providedKey);
+      return res.status(401).json({ error: 'Invalid key', status: 'error', received: providedKey });
     }
-
-    console.log('[API] ✅ Key authorized');
 
     const { id, get_order, check_cmd } = req.query;
 
     // --- GESTION DES REQUÊTES GET ---
     if (req.method === 'GET') {
-      const effective_id = id || req.query.account_id;
-      
+      const effective_id = id || (req.query.account_id);
       if (!effective_id && req.query.health !== '1') {
         return res.status(400).json({ error: 'Missing ID', status: 'error' });
       }
@@ -106,24 +89,19 @@ export default async function handler(req, res) {
         return res.status(200).json({ status: 'ok', confirmed: !!ticket, ticket_id: ticket });
       }
 
-      // ✅ Retourne les données financières
-      const cachedData = cache[effective_id] || {};
-      
-      const data = { 
-        balance: parseFloat(cachedData.balance) || 0,
-        equity: parseFloat(cachedData.equity) || 0,
-        profit: parseFloat(cachedData.profit) || 0,
-        margin: parseFloat(cachedData.margin) || 0,
-        margin_free: parseFloat(cachedData.margin_free) || 0,
-        account_id: effective_id,
-        lastUpdate: cachedData.lastUpdate || 0,
-        isLive: (Date.now() - (cachedData.lastUpdate || 0)) < 30000,
-        status: 'ok'
+      const defaultData = { 
+        balance: 0, equity: 0, profit: 0, lastUpdate: 0, positions: [],
+        symbols: [
+          { name: 'EURUSD', bid: 1.0850, ask: 1.0852, spread: 2, volume: 100 },
+          { name: 'GBPUSD', bid: 1.2650, ask: 1.2653, spread: 3, volume: 80 },
+          { name: 'XAUUSD', bid: 2030.50, ask: 2030.80, spread: 30, volume: 150 }
+        ]
       };
       
-      console.log(`[API] GET account ${effective_id}:`, data);
-      
-      return res.status(200).json(data);
+      const cachedData = cache[effective_id] || {};
+      const data = { ...defaultData, ...cachedData };
+      const isLive = (Date.now() - (data.lastUpdate || 0)) < 30000;
+      return res.status(200).json({ ...data, isLive, status: 'ok' });
     }
 
     // --- GESTION DES REQUÊTES POST ---
@@ -135,38 +113,82 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing fields', status: 'error', message: 'account_id is required' });
       }
 
-      // Sync balance/equity/profit
-      if (body.balance !== undefined || body.equity !== undefined || body.profit !== undefined) {
-        const currentCache = cache[effective_id] || { balance: 0, equity: 0, profit: 0, margin: 0, margin_free: 0 };
-        
+      // Sync positions
+      if (body.positions && Array.isArray(body.positions)) {
         cache[effective_id] = { 
-          ...currentCache,
-          account_id: effective_id,
-          balance: body.balance !== undefined ? parseFloat(body.balance) : currentCache.balance,
-          equity: body.equity !== undefined ? parseFloat(body.equity) : (body.balance !== undefined ? parseFloat(body.balance) : currentCache.equity),
-          profit: body.profit !== undefined ? parseFloat(body.profit) : currentCache.profit,
-          margin: body.margin !== undefined ? parseFloat(body.margin) : currentCache.margin,
-          margin_free: body.margin_free !== undefined ? parseFloat(body.margin_free) : currentCache.margin_free,
-          lastUpdate: Date.now()
+          ...(cache[effective_id] || { balance: 0, equity: 0, profit: 0, symbols: [] }), 
+          positions: body.positions, 
+          lastUpdate: Date.now() 
         };
-        
-        console.log(`[API] ✅ SYNCED ${effective_id}: Balance=${cache[effective_id].balance}, Equity=${cache[effective_id].equity}, Profit=${cache[effective_id].profit}`);
-        
-        return res.status(200).json({ 
-          status: 'ok', 
-          received: true,
-          account_id: effective_id,
-          balance: cache[effective_id].balance,
-          equity: cache[effective_id].equity,
-          profit: cache[effective_id].profit
-        });
+        return res.status(200).json({ status: 'ok', received: true, synced: true, timestamp: Math.floor(Date.now() / 1000) });
       }
 
-      return res.status(200).json({ status: 'ok', received: true });
+      // Open/Update trade
+      if (body.command === 'OPEN_TRADE' || body.command === 'UPDATE_TRADE' || (body.side && !body.ticket_id)) {
+        const newCmdId = "CMD" + Math.floor(Date.now() / 1000);
+        if (!commandQueue[effective_id]) commandQueue[effective_id] = [];
+        commandQueue[effective_id].push({ 
+          cmd_id: newCmdId, 
+          ticket_id: body.ticket_id,
+          symbol: body.symbol || "EURUSD", 
+          side: body.side, 
+          volume: parseFloat(body.volume || 0.01), 
+          sl_points: parseInt(body.sl_points || 0), 
+          tp_points: parseInt(body.tp_points || 0) 
+        });
+        return res.status(200).json({ status: 'ok', received: true, queued: true, cmd_id: newCmdId, timestamp: Math.floor(Date.now() / 1000) });
+      }
+
+      // Confirm execution
+      if (body.ticket_id && body.cmd_id) {
+        if (!executionResults[effective_id]) executionResults[effective_id] = {};
+        executionResults[effective_id][body.cmd_id] = body.ticket_id;
+        if (commandQueue[effective_id]) {
+          commandQueue[effective_id] = commandQueue[effective_id].filter(o => o.cmd_id !== body.cmd_id);
+        }
+        return res.status(200).json({ status: 'ok', received: true, confirmed: true, timestamp: Math.floor(Date.now() / 1000) });
+      }
+
+      // Sync balance/equity (The main real-time data from EA)
+      if (body.balance !== undefined || body.symbols || body.equity !== undefined) {
+        const currentCache = cache[effective_id] || { balance: 0, equity: 0, profit: 0, symbols: [] };
+        
+        let rawSymbols = body.symbols || currentCache.symbols || [];
+        if (!Array.isArray(rawSymbols)) rawSymbols = [];
+
+        // Convert string symbols to objects if necessary
+        const processedSymbols = rawSymbols.map(s => {
+          if (typeof s === 'string') {
+            return {
+              name: s,
+              bid: 0,
+              ask: 0,
+              spread: 0,
+              volume: 0
+            };
+          }
+          return s;
+        });
+
+        cache[effective_id] = { 
+          ...currentCache,
+          ...body, // Capture everything else in the body
+          balance: body.balance !== undefined ? parseFloat(body.balance) : (currentCache.balance || 0), 
+          equity: body.equity !== undefined ? parseFloat(body.equity) : (body.balance !== undefined ? parseFloat(body.balance) : (currentCache.equity || 0)), 
+          profit: body.profit !== undefined ? parseFloat(body.profit) : (currentCache.profit || 0),
+          symbols: processedSymbols,
+          lastUpdate: Date.now() 
+        };
+        
+        console.log(`[API] Synced account ${effective_id}: Balance=${cache[effective_id].balance}, Symbols=${processedSymbols.length}`);
+        return res.status(200).json({ status: 'ok', received: true, synced: true, timestamp: Math.floor(Date.now() / 1000) });
+      }
+
+      // Default success response for any other POST to avoid 500/400 if EA sends something unexpected
+      return res.status(200).json({ status: 'ok', received: true, timestamp: Math.floor(Date.now() / 1000) });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
-    
   } catch (error) {
     console.error('[API ERROR]', error);
     return res.status(500).json({ error: 'Internal Server Error', message: error.message });
