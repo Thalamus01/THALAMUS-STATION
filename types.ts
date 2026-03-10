@@ -59,6 +59,7 @@ export interface Position {
 
 export interface SentinelStats {
   disciplineScore: number;
+  dangerIndex?: number;
   conformityRate: number;
   optimalWindow: string;
   avoidWindow: string;
