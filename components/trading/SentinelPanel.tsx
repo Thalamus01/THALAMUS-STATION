@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Brain, Activity, ShieldCheck, Zap, ShieldAlert, Radar, HelpCircle, Link, Copy, Check, RefreshCcw } from 'lucide-react';
+import React from 'react';
+import { Brain, Activity, ShieldCheck, Zap, ShieldAlert, Radar, HelpCircle } from 'lucide-react';
 import { Vitals, SentinelStats } from '../../types';
 
 interface Props {
@@ -11,31 +11,6 @@ interface Props {
 }
 
 export const SentinelPanel: React.FC<Props> = ({ vitals, sentinelData, currentMode, onOpenFAQ }) => {
-  const [copied, setCopied] = useState<string | null>(null);
-  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
-
-  const testConnection = async () => {
-    setTestStatus('testing');
-    try {
-      const response = await fetch(`${window.location.origin}/api/health`);
-      if (response.ok) setTestStatus('success');
-      else setTestStatus('error');
-    } catch (e) {
-      setTestStatus('error');
-    }
-    setTimeout(() => setTestStatus('idle'), 3000);
-  };
-
-  const copyToClipboard = (text: string, key: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
-  };
-
-  const bridgeUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/trading-data` : '...';
-  const fallbackUrl = 'https://ais-pre-6n3uzutnu4vfywuf7h4xvy-130630791689.europe-west2.run.app/api/trading-data';
-  const bridgeId = 'THA-5234-OBA';
-
   const getModeColor = () => {
     switch (currentMode) {
       case 'HUNTER': return sentinelData.disciplineScore >= 85 ? 'text-emerald-500 border-emerald-500' : 'text-[#F59E0B] border-[#F59E0B]';
@@ -117,68 +92,50 @@ export const SentinelPanel: React.FC<Props> = ({ vitals, sentinelData, currentMo
         </div>
       </div>
 
-      {/* BRIDGE CONFIGURATION */}
-      <div className="p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10 space-y-3">
+      {/* SENTINEL METRICS */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="p-4 rounded-lg bg-white/[0.02] border border-[#1A1A1A] space-y-2">
+          <span className="text-[9px] uppercase text-[#444] font-bold block">Conformité</span>
+          <div className="flex items-end gap-1">
+            <span className="text-[20px] font-bold text-[#F5F5F0]">{sentinelData.conformityRate}%</span>
+          </div>
+          <div className="h-1 w-full bg-[#1A1A1A] rounded-full overflow-hidden">
+            <div className="h-full bg-emerald-500" style={{ width: `${sentinelData.conformityRate}%` }} />
+          </div>
+        </div>
+        <div className="p-4 rounded-lg bg-white/[0.02] border border-[#1A1A1A] space-y-2">
+          <span className="text-[9px] uppercase text-[#444] font-bold block">Vigilance</span>
+          <div className="flex items-end gap-1">
+            <span className="text-[20px] font-bold text-[#F5F5F0]">{sentinelData.cognitiveReadiness}%</span>
+          </div>
+          <div className="h-1 w-full bg-[#1A1A1A] rounded-full overflow-hidden">
+            <div className="h-full bg-cyan-500" style={{ width: `${sentinelData.cognitiveReadiness}%` }} />
+          </div>
+        </div>
+      </div>
+
+      {/* DETECTED BIASES */}
+      <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Link size={14} className="text-emerald-500" />
-          <span className="text-[11px] uppercase tracking-widest font-black text-emerald-500">Configuration Bridge MT5</span>
+          <ShieldAlert size={14} className="text-[#F59E0B]" />
+          <span className="text-[11px] uppercase tracking-widest font-black text-[#F59E0B]">Biais Cognitifs Actifs</span>
         </div>
-        
         <div className="space-y-2">
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] uppercase text-[#444] font-bold">URL API (À copier dans MT5)</span>
-            <div className="flex items-center gap-2 bg-black/40 rounded px-2 py-1.5 border border-white/5">
-              <span className="text-[10px] text-[#888] font-mono truncate flex-1">{bridgeUrl}</span>
-              <button onClick={() => copyToClipboard(bridgeUrl, 'url')} className="text-[#444] hover:text-white transition-colors">
-                {copied === 'url' ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-              </button>
+          {sentinelData.detectedBiases.slice(0, 2).map(bias => (
+            <div key={bias.id} className="p-3 rounded-lg bg-white/[0.02] border border-[#1A1A1A] flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold text-white uppercase">{bias.name}</p>
+                <p className="text-[8px] text-[#444] uppercase">{bias.frequency} de fréquence</p>
+              </div>
+              <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${
+                bias.status === 'critical' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
+                bias.status === 'high' ? 'bg-[#F59E0B]/10 border-[#F59E0B]/20 text-[#F59E0B]' :
+                'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+              }`}>
+                {bias.status}
+              </span>
             </div>
-          </div>
-          
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] uppercase text-[#444] font-bold">ID THALAMUS</span>
-            <div className="flex items-center gap-2 bg-black/40 rounded px-2 py-1.5 border border-white/5">
-              <span className="text-[10px] text-[#888] font-mono flex-1">{bridgeId}</span>
-              <button onClick={() => copyToClipboard(bridgeId, 'id')} className="text-[#444] hover:text-white transition-colors">
-                {copied === 'id' ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        <button 
-          onClick={testConnection}
-          disabled={testStatus === 'testing'}
-          className={`w-full py-1.5 rounded text-[9px] uppercase font-bold transition-all flex items-center justify-center gap-2 ${
-            testStatus === 'success' ? 'bg-emerald-500 text-white' :
-            testStatus === 'error' ? 'bg-red-500 text-white' :
-            'bg-white/5 hover:bg-white/10 text-[#888]'
-          }`}
-        >
-          {testStatus === 'testing' ? <RefreshCcw size={10} className="animate-spin" /> : <Zap size={10} />}
-          {testStatus === 'success' ? 'API OPÉRATIONNELLE' : 
-           testStatus === 'error' ? 'ERREUR CONNEXION' : 
-           'TESTER LA CONNEXION'}
-        </button>
-
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[8px] uppercase text-[#444]">Dernière Synchro MT5</span>
-          <span className="text-[8px] text-emerald-500 font-mono">
-            {sentinelData.emotionState.lastUpdate ? new Date(sentinelData.emotionState.lastUpdate).toLocaleTimeString() : '--:--:--'}
-          </span>
-        </div>
-
-        <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 space-y-1">
-          <p className="text-[9px] text-amber-500 font-bold uppercase tracking-tighter">⚠️ Conseil Expert</p>
-          <p className="text-[8px] text-amber-500/80 leading-tight">
-            Vercel perd la mémoire. Pour une connexion 100% stable, utilisez l'URL Cloud Run dans MT5 :
-          </p>
-          <div className="flex items-center gap-1 bg-black/40 rounded px-1 py-0.5 border border-white/5 mt-1">
-            <span className="text-[7px] text-[#888] font-mono truncate flex-1">{fallbackUrl}</span>
-            <button onClick={() => copyToClipboard(fallbackUrl, 'fallback')} className="text-[#444] hover:text-white transition-colors">
-              {copied === 'fallback' ? <Check size={10} className="text-emerald-500" /> : <Copy size={10} />}
-            </button>
-          </div>
+          ))}
         </div>
       </div>
 
