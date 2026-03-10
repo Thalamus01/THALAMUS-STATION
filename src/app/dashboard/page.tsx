@@ -13,6 +13,8 @@ export default function DashboardPage({
   handleRevealProfit, 
   hasSL,
   mt5Connected,
+  lastUpdate,
+  latency,
   children 
 }: any) {
   return (
@@ -27,6 +29,8 @@ export default function DashboardPage({
       hasSL={hasSL}
       disciplineScore={100}
       mt5Connected={mt5Connected}
+      lastUpdate={lastUpdate || Date.now()}
+      latency={latency || 0}
     >
       {children}
     </DashboardContent>
