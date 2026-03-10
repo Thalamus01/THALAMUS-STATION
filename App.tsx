@@ -198,7 +198,17 @@ export default function App() {
   });
   const [currentAsset, setCurrentAsset] = useState('EURUSD');
   
-  const [accountData, setAccountData] = useState<AccountData | null>(null);
+  const [accountData, setAccountData] = useState<AccountData | null>(() => {
+    const stored = localStorage.getItem('THALAMUS_ACCOUNT_DATA');
+    return stored ? JSON.parse(stored) : null;
+  });
+
+  useEffect(() => {
+    if (accountData) {
+      localStorage.setItem('THALAMUS_ACCOUNT_DATA', JSON.stringify(accountData));
+    }
+  }, [accountData]);
+
   const [positions, setPositions] = useState<Position[]>([]);
 
   // Use real-time Sentinel hook
