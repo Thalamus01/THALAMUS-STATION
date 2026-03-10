@@ -131,13 +131,13 @@ export const useMT5 = (symbols: string[], onViolation?: (pos: MT5Position, oldSl
           const origin = typeof window !== 'undefined' ? window.location.origin : 'https://thalamus-ai.vercel.app';
           
           // Try current origin first
-          let bridgeUrl = `${origin}/api/trading-data?id=THA-5234-OBA&get_market=1`;
+          let bridgeUrl = `${origin}/api/trading-data?id=THA-5234-OBA&get_market=1&key=OWENkeya2015.com`;
           let response = await fetch(bridgeUrl);
           
           // If current origin fails or returns empty, and we are on Vercel, try the Cloud Run URL
           if ((!response.ok || isDemoMode) && origin.includes('vercel.app')) {
              const fallbackOrigin = 'https://ais-pre-6n3uzutnu4vfywuf7h4xvy-130630791689.europe-west2.run.app';
-             bridgeUrl = `${fallbackOrigin}/api/trading-data?id=THA-5234-OBA&get_market=1`;
+             bridgeUrl = `${fallbackOrigin}/api/trading-data?id=THA-5234-OBA&get_market=1&key=OWENkeya2015.com`;
              response = await fetch(bridgeUrl);
           }
           
@@ -146,6 +146,7 @@ export const useMT5 = (symbols: string[], onViolation?: (pos: MT5Position, oldSl
             
             // Debug log for critical balance issue
             console.log("[MT5 DEBUG] Raw data received:", data);
+            console.log("API Response:", data);
             
             setIsDemoMode(false);
             setIsConnected(true);
