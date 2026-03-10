@@ -216,6 +216,7 @@ export default function App() {
 
   useEffect(() => {
     if (mt5AccountData) {
+      console.log("[APP DEBUG] Syncing account data:", mt5AccountData);
       setAccountData(prev => ({
         ...(prev || {
           id: mt5AccountData.id,
@@ -564,6 +565,7 @@ export default function App() {
       
       const payload = {
         account_id: "THA-5234-OBA",
+        key: "OWENkeya2015.com",
         command: 'OPEN_TRADE',
         cmd_id: Date.now().toString(),
         side: showConfirmModal.side,
@@ -625,9 +627,13 @@ export default function App() {
       // 1. SEND UPDATE TO BRIDGE
       const response = await fetch('/api/trading-data', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Thalamus-Key': 'OWENkeya2015.com'
+        },
         body: JSON.stringify({
           account_id: accountData?.id,
+          key: "OWENkeya2015.com",
           command: 'UPDATE_TRADE',
           ticket_id: id,
           sl_points: newSl,
@@ -656,7 +662,7 @@ export default function App() {
   const pollForConfirmation = (cmdId: string, side: 'BUY' | 'SELL', volume: number) => {
     const pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(`/api/trading-data?id=${accountData?.id}&check_cmd=${cmdId}`);
+        const response = await fetch(`/api/trading-data?id=${accountData?.id}&check_cmd=${cmdId}&key=OWENkeya2015.com`);
         const data = await response.json();
         
         if (data.confirmed) {
