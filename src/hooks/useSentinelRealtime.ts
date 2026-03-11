@@ -104,6 +104,36 @@ export const useSentinelRealtime = (accountId: string, key: string) => {
     };
   }, [accountId, key]);
 
+  // Fallback Polling for Serverless (Vercel)
+  useEffect(() => {
+    if (state.isConnected) return;
+
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/trading-data?id=${accountId}&key=${key}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === 'ok') {
+            setState(prev => ({
+              ...prev,
+              ...data,
+              lastUpdate: Date.now(),
+              // We don't set isConnected to true for polling to keep the UI aware it's fallback
+              latency: 0 
+            }));
+          }
+        }
+      } catch (e) {
+        console.error("[SENTINEL] Polling error:", e);
+      }
+    };
+
+    const interval = setInterval(poll, 2000);
+    poll(); // Initial poll
+
+    return () => clearInterval(interval);
+  }, [accountId, key, state.isConnected]);
+
   useEffect(() => {
     connect();
     return () => {
