@@ -15,6 +15,7 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json());
+  app.use(express.text({ type: '*/*' })); // Fallback for non-JSON content types
 
   // Persistent state
   const cache: Record<string, any> = {};
@@ -29,7 +30,7 @@ async function startServer() {
 
     ws.on("message", (message: string) => {
       try {
-        const data = JSON.parse(message);
+        const data = JSON.parse(message.toString());
         if (data.type === "SUBSCRIBE") {
           accountId = data.accountId;
           console.log(`[WS] Client subscribed to ${accountId}`);
@@ -63,15 +64,26 @@ async function startServer() {
 
   const notifyClients = (id: string, data: any) => {
     wss.clients.forEach((client: any) => {
-      if (client.broadcastUpdate) {
-        client.broadcastUpdate(id, data);
+      if ((client as any).broadcastUpdate) {
+        (client as any).broadcastUpdate(id, data);
       }
     });
   };
 
   // API Routes (Mirroring trading-data.js)
   app.all("/api/trading-data", (req, res) => {
-    const providedKey = (req.headers['x-thalamus-key'] || (req.body && req.body.key) || req.query.key || "").toString().toLowerCase();
+    let body = req.body;
+
+    // Robust parsing for MT5
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        // Not JSON, keep as string or empty
+      }
+    }
+    
+    const providedKey = (req.headers['x-thalamus-key'] || (body && body.key) || req.query.key || "").toString().toLowerCase();
     const serverKey = (process.env.THALAMUS_KEY || process.env.VITE_THALAMUS_KEY || "OWENkeya2015.com").toLowerCase();
     
     if (serverKey && providedKey !== serverKey) {
@@ -100,7 +112,6 @@ async function startServer() {
     }
 
     if (req.method === 'POST') {
-      const body = req.body;
       const effective_id = (body.account_id || body.id || body.account) as string;
       if (!effective_id) return res.status(400).json({ error: 'Missing ID' });
 
