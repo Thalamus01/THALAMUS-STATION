@@ -113,79 +113,64 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing fields', status: 'error', message: 'account_id is required' });
       }
 
-      // Sync positions
+      // Initialize or get current cache
+      const currentCache = cache[effective_id] || { 
+        balance: 0, 
+        equity: 0, 
+        profit: 0, 
+        positions: [], 
+        symbols: [],
+        lastUpdate: 0 
+      };
+
+      // Merge incoming data
+      const updatedData = {
+        ...currentCache,
+        ...body,
+        lastUpdate: Date.now()
+      };
+
+      // Ensure numeric types are correct
+      if (body.balance !== undefined) updatedData.balance = parseFloat(body.balance);
+      if (body.equity !== undefined) updatedData.equity = parseFloat(body.equity);
+      if (body.profit !== undefined) updatedData.profit = parseFloat(body.profit);
+      
+      // Handle positions specifically to ensure it's an array
       if (body.positions && Array.isArray(body.positions)) {
-        cache[effective_id] = { 
-          ...(cache[effective_id] || { balance: 0, equity: 0, profit: 0, symbols: [] }), 
-          positions: body.positions, 
-          lastUpdate: Date.now() 
-        };
-        return res.status(200).json({ status: 'ok', received: true, synced: true, timestamp: Math.floor(Date.now() / 1000) });
+        updatedData.positions = body.positions;
       }
 
-      // Open/Update trade
-      if (body.command === 'OPEN_TRADE' || body.command === 'UPDATE_TRADE' || (body.side && !body.ticket_id)) {
-        const newCmdId = "CMD" + Math.floor(Date.now() / 1000);
+      // Save back to cache
+      cache[effective_id] = updatedData;
+
+      // Handle command queuing (if any)
+      if (body.command === 'OPEN_TRADE' || body.command === 'UPDATE_TRADE') {
+        const newCmdId = body.cmd_id || "CMD" + Math.floor(Date.now() / 1000);
         if (!commandQueue[effective_id]) commandQueue[effective_id] = [];
         commandQueue[effective_id].push({ 
-          cmd_id: newCmdId, 
-          ticket_id: body.ticket_id,
-          symbol: body.symbol || "EURUSD", 
-          side: body.side, 
-          volume: parseFloat(body.volume || 0.01), 
-          sl_points: parseInt(body.sl_points || 0), 
-          tp_points: parseInt(body.tp_points || 0) 
+          ...body,
+          cmd_id: newCmdId
         });
-        return res.status(200).json({ status: 'ok', received: true, queued: true, cmd_id: newCmdId, timestamp: Math.floor(Date.now() / 1000) });
+        return res.status(200).json({ status: 'ok', received: true, queued: true, cmd_id: newCmdId });
       }
 
-      // Confirm execution
+      // Handle command confirmations
       if (body.ticket_id && body.cmd_id) {
         if (!executionResults[effective_id]) executionResults[effective_id] = {};
         executionResults[effective_id][body.cmd_id] = body.ticket_id;
         if (commandQueue[effective_id]) {
           commandQueue[effective_id] = commandQueue[effective_id].filter(o => o.cmd_id !== body.cmd_id);
         }
-        return res.status(200).json({ status: 'ok', received: true, confirmed: true, timestamp: Math.floor(Date.now() / 1000) });
       }
 
-      // Sync balance/equity (The main real-time data from EA)
-      if (body.balance !== undefined || body.symbols || body.equity !== undefined) {
-        const currentCache = cache[effective_id] || { balance: 0, equity: 0, profit: 0, symbols: [] };
-        
-        let rawSymbols = body.symbols || currentCache.symbols || [];
-        if (!Array.isArray(rawSymbols)) rawSymbols = [];
-
-        // Convert string symbols to objects if necessary
-        const processedSymbols = rawSymbols.map(s => {
-          if (typeof s === 'string') {
-            return {
-              name: s,
-              bid: 0,
-              ask: 0,
-              spread: 0,
-              volume: 0
-            };
-          }
-          return s;
-        });
-
-        cache[effective_id] = { 
-          ...currentCache,
-          ...body, // Capture everything else in the body
-          balance: body.balance !== undefined ? parseFloat(body.balance) : (currentCache.balance || 0), 
-          equity: body.equity !== undefined ? parseFloat(body.equity) : (body.balance !== undefined ? parseFloat(body.balance) : (currentCache.equity || 0)), 
-          profit: body.profit !== undefined ? parseFloat(body.profit) : (currentCache.profit || 0),
-          symbols: processedSymbols,
-          lastUpdate: Date.now() 
-        };
-        
-        console.log(`[API] Synced account ${effective_id}: Balance=${cache[effective_id].balance}, Symbols=${processedSymbols.length}`);
-        return res.status(200).json({ status: 'ok', received: true, synced: true, timestamp: Math.floor(Date.now() / 1000) });
-      }
-
-      // Default success response for any other POST to avoid 500/400 if EA sends something unexpected
-      return res.status(200).json({ status: 'ok', received: true, timestamp: Math.floor(Date.now() / 1000) });
+      console.log(`[API] Synced ${effective_id}: Bal=${updatedData.balance}, Pos=${updatedData.positions.length}`);
+      
+      return res.status(200).json({ 
+        status: 'ok', 
+        received: true, 
+        synced: true, 
+        timestamp: Math.floor(Date.now() / 1000) 
+      });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
