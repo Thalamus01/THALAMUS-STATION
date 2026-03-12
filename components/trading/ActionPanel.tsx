@@ -17,6 +17,7 @@ interface Props {
   currentLot: number;
   balance: number;
   symbol: string;
+  ticks: Record<string, any>;
 }
 
 export const ActionPanel: React.FC<Props> = ({ 
@@ -31,27 +32,22 @@ export const ActionPanel: React.FC<Props> = ({
   setTpPoints,
   currentLot,
   balance,
-  symbol
+  symbol,
+  ticks
 }) => {
   const [flash, setFlash] = React.useState(false);
-  const [prices, setPrices] = React.useState({ bid: 1.16956, ask: 1.16959 });
+  
+  const currentTick = ticks[symbol] || { bid: 0, ask: 0 };
+  const prices = {
+    bid: currentTick.bid || 0,
+    ask: currentTick.ask || 0
+  };
 
-  // Mock price generator based on symbol
   useEffect(() => {
     setFlash(true);
     const timer = setTimeout(() => setFlash(false), 500);
-
-    const seed = symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const basePrice = (seed % 1000) / 100 + (symbol.includes('JPY') ? 140 : symbol.includes('XAU') ? 2000 : 1);
-    const spread = 0.0003;
-    
-    setPrices({
-      bid: Number(basePrice.toFixed(5)),
-      ask: Number((basePrice + spread).toFixed(5))
-    });
-
     return () => clearTimeout(timer);
-  }, [symbol]);
+  }, [symbol, prices.bid]);
 
   const suggestedLots = calculateLots(balance, riskPercent, slPoints, symbol);
   const monetaryRisk = (balance * (riskPercent / 100)).toFixed(2);
