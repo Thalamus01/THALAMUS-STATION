@@ -277,6 +277,16 @@ export default function App() {
         }
       }));
 
+      setVitals(prev => ({
+        ...prev,
+        heartRate: metrics.vitals.heartRate,
+        stressLevel: metrics.vitals.stressLevel,
+        cognitiveClarity: metrics.vitals.cognitiveClarity,
+        impulsivity: metrics.vitals.impulsivity,
+        discipline: metrics.disciplineScore,
+        readinessScore: Math.max(0, 100 - metrics.errorProbability)
+      }));
+
       setCycleData(prev => ({
         ...prev,
         currentMode: sentinelState.isBlocked ? 'SHELTER' : metrics.mode
@@ -802,26 +812,6 @@ export default function App() {
     }
   }, [marketData, mt5Connected]);
 
-  useEffect(() => {
-    if (huaweiStatus !== 'CONNECTED') return;
-    const interval = setInterval(() => {
-      const simulatedImpulsivity = Math.floor(20 + Math.random() * 60);
-      setBpm(simulatedImpulsivity);
-      setVitals({
-        impulsivity: simulatedImpulsivity,
-        discipline: Math.max(30, 100 - (simulatedImpulsivity / 2)), 
-        cognitiveClarity: Math.max(0, 100 - (simulatedImpulsivity - 40)),
-        stressLevel: simulatedImpulsivity > 75 ? 'High' : simulatedImpulsivity > 50 ? 'Moderate' : 'Low',
-        killSwitchActive: false,
-        baselineDiscipline: 65,
-        heartRate: simulatedImpulsivity,
-        rmssd: Math.max(20, 100 - simulatedImpulsivity),
-        readinessScore: Math.max(10, 100 - (simulatedImpulsivity / 1.5))
-      });
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [huaweiStatus]);
-
   // Cooldown Timer
   useEffect(() => {
     if (!cooldownActive || cooldownTimeLeft <= 0) {
@@ -834,115 +824,67 @@ export default function App() {
     return () => clearInterval(timer);
   }, [cooldownActive, cooldownTimeLeft]);
 
-  // Emotion Simulation
+  // Update Cognitive Capital & Modes (Real-time)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSentinelData(prev => {
-        let intensity = prev.emotionState.intensity;
-        let dominant = prev.emotionState.dominantEmotion;
-        let patterns = [...prev.emotionState.patterns];
+    if (!sentinelState.isConnected) return;
+    
+    setCycleData(prev => {
+      const hour = new Date().getHours();
+      const zone = prev.zones[hour];
+      let capital = prev.cognitiveCapital;
+      let mode = prev.currentMode;
 
-        // Logic based on vitals
-        const currentHour = new Date().getHours();
-        const isLateNight = currentHour >= 22 || currentHour <= 4;
+      // Simulate VIX fluctuation (minor, for UI dynamism)
+      setVixValue(v => Math.max(12, Math.min(35, v + (Math.random() - 0.5) * 0.1)));
 
-        if (vitals.impulsivity > 75) {
-          intensity = Math.min(100, intensity + 5);
-          dominant = 'FOMO';
-          patterns = ['Impulsivité critique', 'Vitesse d\'exécution ↑'];
-        } else if (vitals.stressLevel === 'High') {
-          intensity = Math.min(100, intensity + 3);
-          dominant = 'Revenge';
-          patterns = ['Dérive comportementale', 'Biais de perte actif'];
-        } else if (vitals.cognitiveClarity < 40 || isLateNight) {
-          intensity = Math.min(100, intensity + 2);
-          dominant = 'Fatigue';
-          patterns = ['Temps de réaction ↑', 'Baisse de vigilance', isLateNight ? 'Heure tardive' : 'Clarté cognitive basse'];
-        } else {
-          intensity = Math.max(10, intensity - 2);
-          dominant = intensity < 30 ? 'Calm' : dominant;
-          patterns = intensity < 30 ? ['Stabilité comportementale', 'Focus optimal'] : patterns;
+      // Drain capital based on intensity and session duration
+      const sessionDurationHours = (Date.now() - sessionStartTime.getTime()) / (1000 * 60 * 60);
+      const timeSincePauseHours = (Date.now() - lastPauseTime.getTime()) / (1000 * 60 * 60);
+      
+      const drainRate = (sentinelData.emotionState.intensity / 4000) + (sessionDurationHours / 200) + (timeSincePauseHours / 100);
+      capital = Math.max(0, capital - drainRate);
+      
+      // Danger Index = (Volatility_VIX * Fatigue_Trader) / (Discipline_Historique + 1) / 2
+      const fatigue = 100 - capital;
+      const discipline = sentinelData.disciplineScore / 100;
+      const danger = (vixValue * fatigue) / ((discipline + 1) * 2.5);
+
+      // Auto-switch modes based on thresholds
+      if (danger > 95 || capital < 10) {
+        // mode = 'SHELTER'; 
+      } else if (danger > 70 || zone.status === 'DANGER' || capital < 25) {
+        if (mode !== 'CONSERVATION' && mode !== 'SHELTER') {
+          mode = 'CONSERVATION';
+          setNotification("MODE CONSERVATION : Fatigue ou Zone Risquée détectée.");
         }
+      } else if (consecutiveLosses >= 2) {
+        mode = 'RECOVERY';
+      } else if (zone.status === 'OPTIMAL' && capital > 70 && danger < 30) {
+        mode = 'HUNTER';
+      }
 
-        return {
-          ...prev,
-          emotionState: {
-            ...prev.emotionState,
-            intensity,
-            dominantEmotion: dominant,
-            patterns,
-            lastUpdate: new Date().toISOString()
-          }
-        };
-      });
-
-      // Update Cognitive Capital & Modes
-      setCycleData(prev => {
-        const hour = new Date().getHours();
-        const zone = prev.zones[hour];
-        let capital = prev.cognitiveCapital;
-        let mode = prev.currentMode;
-
-        // Simulate VIX fluctuation
-        setVixValue(v => Math.max(12, Math.min(35, v + (Math.random() - 0.5))));
-
-        // Drain capital based on intensity, time since last pause, and session duration
-        const sessionDurationHours = (Date.now() - sessionStartTime.getTime()) / (1000 * 60 * 60);
-        const timeSincePauseHours = (Date.now() - lastPauseTime.getTime()) / (1000 * 60 * 60);
-        
-        const drainRate = (sentinelData.emotionState.intensity / 400) + (sessionDurationHours / 20) + (timeSincePauseHours / 10);
-        capital = Math.max(0, capital - drainRate);
-        
-        // Danger Index = (Volatility_VIX * Fatigue_Trader) / (Discipline_Historique + 1) / 2
-        const fatigue = 100 - capital;
-        const discipline = sentinelData.disciplineScore / 100;
-        const danger = (vixValue * fatigue) / ((discipline + 1) * 2.5);
-
-        // Auto-switch modes based on thresholds (SHELTER disabled for preview)
-        if (danger > 95 || capital < 10) {
-          // mode = 'SHELTER'; // Disabled auto-shelter to let user work
-        } else if (danger > 70 || zone.status === 'DANGER' || capital < 25) {
-          if (mode !== 'CONSERVATION' && mode !== 'SHELTER') {
-            mode = 'CONSERVATION';
-            setNotification("MODE CONSERVATION : Fatigue ou Zone Risquée détectée.");
-          }
-        } else if (consecutiveLosses >= 2) {
-          mode = 'RECOVERY';
-        } else if (zone.status === 'OPTIMAL' && capital > 70 && danger < 30) {
-          mode = 'HUNTER';
-        }
-
-        // Trigger alert if transitioning to risk soon (30 min before)
-        const nextHour = (hour + 1) % 24;
-        if (prev.zones[nextHour].status !== zone.status && !showCycleAlert && prev.lastAlertedHour !== nextHour) {
-          setShowCycleAlert(true);
-          return {
-            ...prev,
-            cognitiveCapital: Number(capital.toFixed(1)),
-            dangerIndex: Number(Math.min(100, danger).toFixed(1)),
-            currentMode: mode,
-            lastAlertedHour: nextHour
-          };
-        }
-
-        // Trigger Rescue Modal if high intensity and not recently shown (DISABLED AS REQUESTED)
-        /*
-        if (sentinelData.emotionState.intensity > 85 && !showRescueModal) {
-          setRescueAmount(currentLot * 100); // Simulated rescue amount
-          setShowRescueModal(true);
-        }
-        */
-
+      // Trigger alert if transitioning to risk soon (30 min before)
+      const nextHour = (hour + 1) % 24;
+      if (prev.zones[nextHour].status !== zone.status && !showCycleAlert && prev.lastAlertedHour !== nextHour) {
+        setShowCycleAlert(true);
         return {
           ...prev,
           cognitiveCapital: Number(capital.toFixed(1)),
           dangerIndex: Number(Math.min(100, danger).toFixed(1)),
-          currentMode: mode
+          currentMode: mode,
+          lastAlertedHour: nextHour
         };
-      });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [vitals, sentinelData.emotionState.intensity]);
+      }
+
+      return {
+        ...prev,
+        cognitiveCapital: Number(capital.toFixed(1)),
+        dangerIndex: Number(Math.min(100, danger).toFixed(1)),
+        currentMode: mode
+      };
+    });
+  }, [sentinelState.lastUpdate, sentinelData.emotionState.intensity]);
+
 
   const isNeuralLocked = false;
 
@@ -1456,6 +1398,7 @@ export default function App() {
                       currentLot={currentLot}
                       balance={accountData?.balance || 0}
                       symbol={currentAsset}
+                      ticks={sentinelState.ticks}
                     />
                   )}
                 </aside>
