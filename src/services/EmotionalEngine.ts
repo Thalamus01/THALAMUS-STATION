@@ -6,6 +6,12 @@ export interface EmotionalMetrics {
   mode: 'HUNTER' | 'CONSERVATION' | 'SHELTER';
   prediction: string;
   errorProbability: number;
+  vitals: {
+    heartRate: number;
+    stressLevel: 'Low' | 'Moderate' | 'High';
+    cognitiveClarity: number;
+    impulsivity: number;
+  };
 }
 
 export interface BiasDetection {
@@ -52,6 +58,9 @@ export class EmotionalEngine {
     // 9. Generate Prediction
     const prediction = this.generatePrediction(state, errorProbability);
 
+    // 10. Estimate Vitals based on real data
+    const vitals = this.estimateVitals(intensity, dangerIndex, state);
+
     return {
       intensity,
       dangerIndex,
@@ -67,7 +76,27 @@ export class EmotionalEngine {
       })),
       mode,
       prediction,
-      errorProbability
+      errorProbability,
+      vitals
+    };
+  }
+
+  private static estimateVitals(intensity: number, danger: number, state: any) {
+    const baseHR = 65;
+    const heartRate = Math.floor(baseHR + (intensity / 2) + (danger / 4));
+    
+    let stressLevel: 'Low' | 'Moderate' | 'High' = 'Low';
+    if (intensity > 70) stressLevel = 'High';
+    else if (intensity > 40) stressLevel = 'Moderate';
+
+    const cognitiveClarity = Math.max(0, 100 - (intensity / 1.5) - (danger / 2));
+    const impulsivity = Math.min(100, (intensity * 0.8) + (danger * 0.2));
+
+    return {
+      heartRate,
+      stressLevel,
+      cognitiveClarity,
+      impulsivity
     };
   }
 
