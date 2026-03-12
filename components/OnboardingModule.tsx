@@ -69,14 +69,14 @@ const OnboardingModule: React.FC<Props> = ({ onComplete, lang = 'FR' }) => {
   const pricingTiers = [
     {
       name: 'NANO',
-      price: '0',
-      description: lang === 'FR' ? 'Pour les capitaux < 1000€' : 'For capitals < 1000€',
+      price: '0 pts',
+      description: lang === 'FR' ? 'Capacité < 1000' : 'Capacity < 1000',
       features: ['VaR Adaptative 5%', 'Kill-switch Bio', 'Micro-lot Sync'],
       accent: 'border-slate-800'
     },
     {
       name: 'PRO',
-      price: '49',
+      price: '49 pts',
       description: lang === 'FR' ? 'Scalping Professionnel' : 'Professional Scalping',
       features: ['VaR 2% Native', 'Multi-Terminal Link', 'HRV Analytics Pro'],
       accent: 'border-cyan-500/30',
@@ -84,7 +84,7 @@ const OnboardingModule: React.FC<Props> = ({ onComplete, lang = 'FR' }) => {
     },
     {
       name: 'ELITE',
-      price: '149',
+      price: '149 pts',
       description: lang === 'FR' ? 'Accès Alpha Total' : 'Total Alpha Access',
       features: ['Shadow Pool Access', 'Tax-Loss Harvesting', 'IA Priority Nudge'],
       accent: 'border-amber-500/50',
@@ -205,8 +205,8 @@ const OnboardingModule: React.FC<Props> = ({ onComplete, lang = 'FR' }) => {
                   </div>
 
                   <div className="flex items-baseline gap-1 mb-10">
-                    <span className="text-4xl font-black text-white italic tracking-tighter">€{tier.price}</span>
-                    <span className="text-slate-600 text-[10px] font-black uppercase">/ month</span>
+                    <span className="text-4xl font-black text-white italic tracking-tighter">{tier.price}</span>
+                    <span className="text-slate-600 text-[10px] font-black uppercase">/ cycle</span>
                   </div>
 
                   <ul className="space-y-4 flex-1">

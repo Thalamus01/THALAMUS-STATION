@@ -115,17 +115,52 @@ async function startServer() {
       const effective_id = (body.account_id || body.id || body.account) as string;
       if (!effective_id) return res.status(400).json({ error: 'Missing ID' });
 
-      const currentCache = cache[effective_id] || { balance: 0, equity: 0, profit: 0, positions: [], symbols: [] };
+      const currentCache = cache[effective_id] || { balance: 0, equity: 0, profit: 0, positions: [], symbols: [], disciplineScore: 100 };
       
+      // 1. UNIVERSAL PROTECTION
+      const adjustedMaxLoss = 2.0;
+
+      // 2. TRADE VALIDATION
+      if (body.type === 'VALIDATE_TRADE') {
+        const score = currentCache.disciplineScore || 100;
+        const positions = currentCache.positions || [];
+        const isBlocked = currentCache.isBlocked || false;
+        const canTrade = score > 70 && !isBlocked && positions.length < 3;
+        let reason = "OK";
+        
+        if (score <= 70) reason = "Score Discipline trop bas (" + score + "%)";
+        if (isBlocked) reason = "Trading bloqué (Limite journalière atteinte)";
+        if (positions.length >= 3) reason = "Maximum de 3 positions simultanées atteint";
+
+        return res.json({ 
+          status: 'ok', 
+          authorized: canTrade, 
+          reason: reason,
+          adjustedMaxLoss: adjustedMaxLoss
+        });
+      }
+
       // Update cache
-      cache[effective_id] = {
+      const updatedData = {
         ...currentCache,
         ...body,
         balance: body.balance !== undefined ? parseFloat(body.balance) : currentCache.balance,
         equity: body.equity !== undefined ? parseFloat(body.equity) : currentCache.equity,
         profit: body.profit !== undefined ? parseFloat(body.profit) : currentCache.profit,
-        lastUpdate: Date.now()
+        symbols: body.symbols || currentCache.symbols,
+        symbol_details: body.symbol_details || currentCache.symbol_details,
+        lastUpdate: Date.now(),
+        adjustedMaxLoss: adjustedMaxLoss
       };
+
+      // Check Daily Loss
+      const dailyLoss = ((updatedData.balance - updatedData.equity) / updatedData.balance) * 100;
+      if (dailyLoss >= adjustedMaxLoss) {
+        updatedData.isBlocked = true;
+        updatedData.blockReason = `Limite de perte journalière atteinte (-${dailyLoss.toFixed(2)}%)`;
+      }
+
+      cache[effective_id] = updatedData;
 
       // Handle commands
       if (body.command === 'OPEN_TRADE' || body.command === 'UPDATE_TRADE') {

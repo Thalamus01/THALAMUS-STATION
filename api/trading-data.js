@@ -109,67 +109,69 @@ export default async function handler(req, res) {
       const effective_id = body.account_id || body.id || body.account;
 
       if (!effective_id) {
-        console.error('[API] Missing ID in POST body:', body);
-        return res.status(400).json({ error: 'Missing fields', status: 'error', message: 'account_id is required' });
+        return res.status(400).json({ error: 'Missing account_id', status: 'error' });
       }
 
       // Initialize or get current cache
       const currentCache = cache[effective_id] || { 
-        balance: 0, 
-        equity: 0, 
-        profit: 0, 
-        positions: [], 
-        symbols: [],
-        lastUpdate: 0 
+        balance: 0, equity: 0, profit: 0, margin: 0, margin_level: 0,
+        positions: [], symbols: [], lastUpdate: 0, disciplineScore: 100
       };
 
-      // Merge incoming data
+      // 1. UNIVERSAL PROTECTION (Fixed 2% Daily Loss)
+      const adjustedMaxLoss = 2.0; 
+
+      // 2. TRADE VALIDATION LOGIC
+      if (body.type === 'VALIDATE_TRADE') {
+        const score = currentCache.disciplineScore || 100;
+        const positions = currentCache.positions || [];
+        const canTrade = score > 70 && !currentCache.isBlocked && positions.length < 3;
+        let reason = "OK";
+        
+        if (score <= 70) reason = "Score Discipline trop bas (" + score + "%)";
+        if (currentCache.isBlocked) reason = "Trading bloqué (Limite journalière atteinte)";
+        if (positions.length >= 3) reason = "Maximum de 3 positions simultanées atteint";
+
+        return res.status(200).json({ 
+          status: 'ok', 
+          authorized: canTrade, 
+          reason: reason,
+          adjustedMaxLoss: adjustedMaxLoss
+        });
+      }
+
+      // 3. MERGE DATA
       const updatedData = {
         ...currentCache,
         ...body,
-        lastUpdate: Date.now()
+        lastUpdate: Date.now(),
+        adjustedMaxLoss: adjustedMaxLoss
       };
 
-      // Ensure numeric types are correct
+      // Ensure numeric types
       if (body.balance !== undefined) updatedData.balance = parseFloat(body.balance);
       if (body.equity !== undefined) updatedData.equity = parseFloat(body.equity);
       if (body.profit !== undefined) updatedData.profit = parseFloat(body.profit);
+      if (body.margin !== undefined) updatedData.margin = parseFloat(body.margin);
       
-      // Handle positions specifically to ensure it's an array
-      if (body.positions && Array.isArray(body.positions)) {
-        updatedData.positions = body.positions;
+      // Handle symbols and details
+      if (body.symbols) updatedData.symbols = body.symbols;
+      if (body.symbol_details) updatedData.symbol_details = body.symbol_details;
+      
+      // Check Daily Loss Limit
+      const dailyLoss = ((updatedData.balance - updatedData.equity) / updatedData.balance) * 100;
+      if (dailyLoss >= adjustedMaxLoss) {
+        updatedData.isBlocked = true;
+        updatedData.blockReason = "Limite journalière de " + adjustedMaxLoss + "% atteinte";
       }
 
-      // Save back to cache
       cache[effective_id] = updatedData;
 
-      // Handle command queuing (if any)
-      if (body.command === 'OPEN_TRADE' || body.command === 'UPDATE_TRADE') {
-        const newCmdId = body.cmd_id || "CMD" + Math.floor(Date.now() / 1000);
-        if (!commandQueue[effective_id]) commandQueue[effective_id] = [];
-        commandQueue[effective_id].push({ 
-          ...body,
-          cmd_id: newCmdId
-        });
-        return res.status(200).json({ status: 'ok', received: true, queued: true, cmd_id: newCmdId });
-      }
-
-      // Handle command confirmations
-      if (body.ticket_id && body.cmd_id) {
-        if (!executionResults[effective_id]) executionResults[effective_id] = {};
-        executionResults[effective_id][body.cmd_id] = body.ticket_id;
-        if (commandQueue[effective_id]) {
-          commandQueue[effective_id] = commandQueue[effective_id].filter(o => o.cmd_id !== body.cmd_id);
-        }
-      }
-
-      console.log(`[API] Synced ${effective_id}: Bal=${updatedData.balance}, Pos=${updatedData.positions.length}`);
-      
       return res.status(200).json({ 
         status: 'ok', 
         received: true, 
-        synced: true, 
-        timestamp: Math.floor(Date.now() / 1000) 
+        isBlocked: !!updatedData.isBlocked,
+        adjustedMaxLoss: adjustedMaxLoss
       });
     }
 

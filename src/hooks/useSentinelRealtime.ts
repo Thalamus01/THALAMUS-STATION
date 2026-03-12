@@ -4,8 +4,12 @@ export interface SentinelState {
   balance: number;
   equity: number;
   profit: number;
+  margin: number;
+  margin_level: number;
   positions: any[];
   ticks: Record<string, any>;
+  symbols: string[];
+  symbol_details: any[];
   lastUpdate: number;
   isConnected: boolean;
   latency: number;
@@ -14,6 +18,9 @@ export interface SentinelState {
   emotionalIntensity: number;
   disciplineScore: number;
   detectedBiases: any[];
+  isBlocked: boolean;
+  blockReason: string;
+  adjustedMaxLoss: number;
 }
 
 export const useSentinelRealtime = (accountId: string, key: string) => {
@@ -21,8 +28,12 @@ export const useSentinelRealtime = (accountId: string, key: string) => {
     balance: 0,
     equity: 0,
     profit: 0,
+    margin: 0,
+    margin_level: 0,
     positions: [],
     ticks: {},
+    symbols: [],
+    symbol_details: [],
     lastUpdate: Date.now(),
     isConnected: false,
     latency: 0,
@@ -30,7 +41,10 @@ export const useSentinelRealtime = (accountId: string, key: string) => {
     dangerIndex: 0,
     emotionalIntensity: 0,
     disciplineScore: 100,
-    detectedBiases: []
+    detectedBiases: [],
+    isBlocked: false,
+    blockReason: '',
+    adjustedMaxLoss: 2.0
   });
 
   const socketRef = useRef<WebSocket | null>(null);

@@ -15,12 +15,24 @@ const TradingViewChart: React.FC<Props> = memo(({ symbol, isLive }) => {
   // Mapping des symboles pour l'URL de l'iframe
   const tvSymbol = useMemo(() => {
     switch (symbol) {
-      case 'BTC/USD': return 'BINANCE:BTCUSDT';
-      case 'XAU/USD': return 'OANDA:XAUUSD';
-      case 'EUR/USD': return 'FX:EURUSD';
+      case 'BTC/USD': 
+      case 'BTCUSD': return 'BINANCE:BTCUSDT';
+      case 'ETH/USD':
+      case 'ETHUSD': return 'BINANCE:ETHUSDT';
+      case 'XAU/USD':
+      case 'XAUUSD': 
+      case 'GOLD': return 'OANDA:XAUUSD';
+      case 'EUR/USD':
+      case 'EURUSD': return 'FX:EURUSD';
+      case 'GBP/USD':
+      case 'GBPUSD': return 'FX:GBPUSD';
+      case 'USD/JPY':
+      case 'USDJPY': return 'FX:USDJPY';
       case 'US30': return 'BLACKBULL:US30';
-      case 'ETH/USD': return 'BINANCE:ETHUSDT';
-      case 'NAS100': return 'OANDA:NAS100USD';
+      case 'NAS100':
+      case 'USTEC': return 'OANDA:NAS100USD';
+      case 'GER40':
+      case 'DAX40': return 'OANDA:DE30EUR';
       default: return symbol.includes('/') ? symbol.replace('/', '') : symbol;
     }
   }, [symbol]);

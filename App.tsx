@@ -50,6 +50,8 @@ interface AccountData {
   balance: number | null;
   equity: number | null;
   profit: number | null;
+  margin?: number;
+  margin_level?: number;
   currency?: string;
   status: 'CONNECTED' | 'DISCONNECTED' | 'WAITING';
   symbols?: string[];
@@ -177,6 +179,10 @@ const isSimulated = false;
 const demoMode = false;
 const liveTrading = true;
 const sentinelProtection = true;
+import { ShelterOverlay } from './src/components/ShelterOverlay';
+
+// -----------------------------------
+// Main Application Component
 // -----------------------------------
 
 export default function App() {
@@ -185,6 +191,21 @@ export default function App() {
   const [mt5Connected, setMt5Connected] = useState(false);
   const [isFluxLive, setIsFluxLive] = useState(false);
   
+  const [userProfile, setUserProfile] = useState<any>(() => {
+    const stored = localStorage.getItem('THALAMUS_USER_PROFILE');
+    if (stored) return JSON.parse(stored);
+    
+    // Default universal profile
+    const defaultProfile = {
+      name: 'Trader Thalamus',
+      level: 'STANDARD',
+      protection: 'SENTINEL STANDARD',
+      joinedAt: new Date().toISOString()
+    };
+    localStorage.setItem('THALAMUS_USER_PROFILE', JSON.stringify(defaultProfile));
+    return defaultProfile;
+  });
+
   const [isResident, setIsResident] = useState(() => {
     const stored = localStorage.getItem('THALAMUS_IS_RESIDENT');
     return stored === 'true';
@@ -219,10 +240,17 @@ export default function App() {
   const mt5Positions = sentinelState.positions;
   const isDemoMode = false; // Real-time mode is not demo
   const marketData = {
-    ...sentinelState.ticks,
     isLive: sentinelState.isConnected,
     lastUpdate: sentinelState.lastUpdate,
-    symbols: Object.keys(sentinelState.ticks)
+    symbols: sentinelState.symbol_details && sentinelState.symbol_details.length > 0 
+      ? sentinelState.symbol_details 
+      : Object.keys(sentinelState.ticks || {}).map(name => ({ 
+          name, 
+          bid: sentinelState.ticks[name]?.bid || 0, 
+          ask: sentinelState.ticks[name]?.ask || 0, 
+          spread: sentinelState.ticks[name]?.spread || 0,
+          change: sentinelState.ticks[name]?.change || 0
+        }))
   } as any;
 
   // Sync mt5Connected with actual connection status
@@ -232,7 +260,8 @@ export default function App() {
 
   // Update Emotional Engine and Sentinel Data
   useEffect(() => {
-    if (sentinelState.isConnected) {
+    const hasData = sentinelState.balance > 0 || sentinelState.positions.length > 0;
+    if (sentinelState.isConnected || hasData) {
       const metrics = EmotionalEngine.calculate(sentinelState);
       
       setSentinelData(prev => ({
@@ -250,7 +279,7 @@ export default function App() {
 
       setCycleData(prev => ({
         ...prev,
-        currentMode: metrics.mode
+        currentMode: sentinelState.isBlocked ? 'SHELTER' : metrics.mode
       }));
 
       setAccountData({
@@ -260,6 +289,8 @@ export default function App() {
         balance: sentinelState.balance,
         equity: sentinelState.equity,
         profit: sentinelState.profit,
+        margin: sentinelState.margin,
+        margin_level: sentinelState.margin_level,
         currency: 'USD',
         status: 'CONNECTED'
       });
@@ -323,6 +354,22 @@ export default function App() {
     }
   }, [accountData?.balance, riskPercent, slPoints, currentAsset]);
 
+  const handleTrade = async (side: 'BUY' | 'SELL') => {
+    if (sentinelState.isBlocked) {
+      setNotification(`TRADING BLOQUÉ : ${sentinelState.blockReason}`);
+      return;
+    }
+
+    if (sentinelData.disciplineScore < 70) {
+      setNotification("🛡️ SENTINEL : Trade refusé. Score discipline insuffisant (<70%)");
+      applyDisciplinePenalty("Tentative de trade avec discipline faible");
+      return;
+    }
+
+    setPendingSide(side);
+    setShowConfirmModal({ side, open: true });
+  };
+
   const [showConfirmModal, setShowConfirmModal] = useState<{side: 'BUY' | 'SELL', open: boolean}>({side: 'BUY', open: false});
   const [isExecuting, setIsExecuting] = useState(false);
   const [lastTicketId, setLastTicketId] = useState<string | null>(null);
@@ -354,7 +401,8 @@ export default function App() {
   const [huaweiStatus, setHuaweiStatus] = useState<'DISCONNECTED' | 'WAITING' | 'CONNECTED'>('DISCONNECTED');
   const [validationErrors, setValidationErrors] = useState<{lot?: boolean, sl?: boolean, tp?: boolean}>({});
   const [notification, setNotification] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'COCKPIT' | 'SENTINEL' | 'TREASURE' | 'PROFILE'>('COCKPIT');
+  const [activeTab, setActiveTab] = useState<'COCKPIT' | 'SENTINEL' | 'RESIDENCE'>('COCKPIT');
+  const [residenceTab, setResidenceTab] = useState<'TREASURE' | 'IDENTITY'>('TREASURE');
   const [sentinelTab, setSentinelTab] = useState<'STATUS' | 'CYCLES' | 'SHIELD' | 'EVOLUTION'>('STATUS');
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownTimeLeft, setCooldownTimeLeft] = useState(0);
@@ -382,6 +430,8 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMarketsDrawerOpen, setIsMarketsDrawerOpen] = useState(false);
   const [showProfit, setShowProfit] = useState(true);
+  const [userEmail] = useState('ngtinfos@gmail.com'); // In a real app, this would come from auth
+  const isAdmin = userEmail === 'ngtinfos@gmail.com';
   const [showBalance, setShowBalance] = useState(true);
   const [tpAlert, setTpAlert] = useState<{open: boolean, message: string}>({open: false, message: ''});
   const [slAlert, setSlAlert] = useState<{open: boolean, message: string}>({open: false, message: ''});
@@ -1103,7 +1153,7 @@ export default function App() {
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               onMouseEnter={() => setShowProfileMenu(true)}
               className={`text-[14px] transition-all flex items-center gap-2 py-1 ${
-                ['TREASURE', 'PROFILE'].includes(activeTab) ? 'text-[#D4AF37]' : 'text-[#888] hover:text-[#D4AF37]'
+                activeTab === 'RESIDENCE' ? 'text-[#D4AF37]' : 'text-[#888] hover:text-[#D4AF37]'
               }`}
             >
               <div className="w-8 h-8 rounded-full bg-slate-800 border border-[#2B2F36] flex items-center justify-center overflow-hidden">
@@ -1111,7 +1161,7 @@ export default function App() {
               </div>
               <span>Profil</span>
               <ChevronDown size={14} strokeWidth={1.5} className={`transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
-              {['TREASURE', 'PROFILE'].includes(activeTab) && <div className="absolute bottom-[-18px] left-0 w-full h-[2px] bg-[#D4AF37]" />}
+              {activeTab === 'RESIDENCE' && <div className="absolute bottom-[-18px] left-0 w-full h-[2px] bg-[#D4AF37]" />}
             </button>
 
             {showProfileMenu && (
@@ -1121,30 +1171,28 @@ export default function App() {
               >
                 <div className="px-4 py-3 border-b border-white/5 mb-2">
                   <p className="text-[12px] uppercase tracking-[1.5px] text-[#666]">{userName}</p>
-                  <p className="text-[11px] text-[#444] font-medium truncate uppercase">ngtinfos@gmail.com</p>
+                  <p className="text-[11px] text-[#444] font-medium truncate uppercase">{userEmail}</p>
                 </div>
                 {[
-                  { id: 'TREASURE', label: 'Mon Trésor', icon: <Award size={14} strokeWidth={1.5} /> },
-                  { id: 'PROFILE', label: 'Paramètres', icon: <User size={14} strokeWidth={1.5} /> },
-                  { id: 'ADMIN', label: 'Admin Console', icon: <ShieldCheck size={14} strokeWidth={1.5} /> },
+                  { id: 'IDENTITY', label: 'Mon Identité', icon: <User size={14} strokeWidth={1.5} /> },
+                  ...(isAdmin ? [{ id: 'ADMIN', label: 'Admin Console', icon: <ShieldCheck size={14} strokeWidth={1.5} /> }] : []),
                   { id: 'FAQ', label: 'Aide & FAQ', icon: <HelpCircle size={14} strokeWidth={1.5} /> }
                 ].map(item => (
                   <button
                     key={item.id}
                     onClick={() => { 
-                      if (item.id === 'LINK') {
-                        setShowAccountLinkModal(true);
-                      } else if (item.id === 'FAQ') {
+                      if (item.id === 'FAQ') {
                         setShowFAQ(true);
                       } else if (item.id === 'ADMIN') {
                         setShowAdminDashboard(true);
                       } else {
-                        setActiveTab(item.id as any);
+                        setActiveTab('RESIDENCE');
+                        setResidenceTab(item.id as any);
                       }
                       setShowProfileMenu(false); 
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-2.5 text-[14px] transition-colors ${
-                      activeTab === item.id ? 'text-[#D4AF37] bg-white/5' : 'text-[#888] hover:bg-white/5 hover:text-[#D4AF37]'
+                      activeTab === 'RESIDENCE' && residenceTab === item.id ? 'text-[#D4AF37] bg-white/5' : 'text-[#888] hover:bg-white/5 hover:text-[#D4AF37]'
                     }`}
                   >
                     {item.icon}
@@ -1225,8 +1273,7 @@ export default function App() {
                 <div className="h-px bg-white/10 my-4" />
 
                 <div className="space-y-6">
-                  <button onClick={() => { setActiveTab('TREASURE'); setIsMobileMenuOpen(false); }} className="text-xl font-bold text-slate-300 block w-full text-left">Récompenses</button>
-                  <button onClick={() => { setActiveTab('PROFILE'); setIsMobileMenuOpen(false); }} className="text-xl font-bold text-slate-300 block w-full text-left">Paramètres</button>
+                  <button onClick={() => { setActiveTab('RESIDENCE'); setResidenceTab('IDENTITY'); setIsMobileMenuOpen(false); }} className="text-xl font-bold text-slate-300 block w-full text-left">Mon Identité</button>
                   <button className="text-xl font-bold text-red-400 block w-full text-left">Déconnexion</button>
                 </div>
               </nav>
@@ -1234,6 +1281,17 @@ export default function App() {
           )}
         </AnimatePresence>
       </header>
+
+      <AnimatePresence>
+        {sentinelState.isBlocked && (
+          <ShelterOverlay 
+            reason={sentinelState.blockReason} 
+            onForceResume={() => {
+              setNotification("🛡️ SENTINEL : Reprise forcée par l'utilisateur. Vigilance maximale.");
+            }} 
+          />
+        )}
+      </AnimatePresence>
 
       {activeTab === 'COCKPIT' ? (
         <ErrorBoundary>
@@ -1250,23 +1308,26 @@ export default function App() {
             mt5Connected={mt5Connected}
             lastUpdate={sentinelState.lastUpdate}
             latency={sentinelState.latency}
+            sentinelData={sentinelData}
           >
           <div className="h-full flex flex-row overflow-hidden">
             {/* LEFT DRAWER: MARKETS */}
             <div className="flex-1 flex flex-col min-w-0">
               <div className="flex-1 flex overflow-hidden">
                 {/* LEFT: SENTINEL IA */}
-                <aside className="hidden lg:block w-[280px] border-r border-[#2B2F36]">
+                <aside className="hidden lg:block w-[240px] border-r border-[#2B2F36]">
                   <SentinelPanel 
                     vitals={vitals} 
                     sentinelData={sentinelData} 
                     currentMode={cycleData.currentMode} 
                     onOpenFAQ={() => setShowFAQ(true)}
+                    userProfile={userProfile}
+                    adjustedMaxLoss={sentinelState.adjustedMaxLoss}
                   />
                 </aside>
 
                 {/* LEFT-CENTER: MARKET WATCH */}
-                <aside className="hidden xl:block w-[300px] border-r border-[#2B2F36]">
+                <aside className="hidden xl:block w-[220px] border-r border-[#2B2F36]">
                   <MarketWatch 
                     marketData={marketData}
                     onSelectSymbol={(s) => addAssetFromMT5(s)}
@@ -1383,7 +1444,7 @@ export default function App() {
                     </div>
                   ) : (
                     <ActionPanel 
-                      onExecute={(side) => setShowConfirmModal({ side, open: true })}
+                      onExecute={handleTrade}
                       isExecuting={isExecuting}
                       currentMode={cycleData.currentMode}
                       riskPercent={riskPercent}
@@ -1868,57 +1929,75 @@ export default function App() {
         )}
 
 
-        {activeTab === 'TREASURE' && <TreasureDashboard />}
-
-        {activeTab === 'PROFILE' && (
-          <div className="max-w-4xl mx-auto py-12 px-6 space-y-12 animate-in fade-in duration-700">
-            <div className="text-center space-y-4">
-              <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6">
-                <User size={48} className="text-slate-500" />
+        {activeTab === 'RESIDENCE' && (
+          <div className="min-h-screen">
+            {/* Sub-navigation for Residence */}
+            <div className="sticky top-[64px] z-40 bg-black/80 backdrop-blur-md border-b border-white/5">
+              <div className="max-w-4xl mx-auto px-6 flex justify-center gap-8">
+                {[
+                  { id: 'TREASURE', label: 'Mon Trésor', icon: <Award size={14} /> },
+                  { id: 'IDENTITY', label: 'Mon Identité', icon: <User size={14} /> }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setResidenceTab(tab.id as any)}
+                    className={`flex items-center gap-2 py-4 text-[10px] font-black uppercase tracking-[0.3em] transition-all relative ${
+                      residenceTab === tab.id ? 'text-[#D4AF37]' : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                    {residenceTab === tab.id && (
+                      <motion.div layoutId="residence-active" className="absolute bottom-0 left-0 w-full h-0.5 bg-[#D4AF37]" />
+                    )}
+                  </button>
+                ))}
               </div>
-              <h2 className="text-4xl font-black text-white uppercase tracking-tighter font-display">{userName}</h2>
-              <p className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-[0.3em]">Résident du Temple</p>
             </div>
 
-            <section className="p-8 rounded-3xl bg-white/[0.02] border border-white/5 space-y-8">
-              <div className="flex items-center gap-3 text-white">
-                <PenTool size={20} className="text-[#D4AF37]" />
-                <h3 className="text-xl font-black uppercase tracking-tighter">Mon Engagement</h3>
-              </div>
-              <div className="space-y-4">
-                <p className="text-xs text-slate-500 uppercase tracking-widest leading-relaxed">
-                  Ce serment est votre boussole. Il est affiché sur votre profil public et guide vos décisions.
-                </p>
-                <div className="relative">
-                  <span className="absolute top-4 left-4 text-slate-600 font-serif italic text-lg">"Je, {userName}, m'engage à..."</span>
-                  <textarea 
-                    value={userOath}
-                    onChange={(e) => setUserOath(e.target.value)}
-                    placeholder="Définissez votre propre loi de discipline..."
-                    className="w-full h-48 bg-black/40 border border-white/10 rounded-2xl p-8 pt-12 text-white font-serif italic text-lg outline-none focus:border-[#D4AF37] transition-all resize-none"
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <button className="px-8 py-3 rounded-full bg-[#D4AF37] text-black font-black text-[10px] uppercase tracking-widest hover:bg-[#C4A030] transition-all">
-                    Sceller mon serment
-                  </button>
-                </div>
-              </div>
-            </section>
+            <div className="animate-in fade-in duration-700">
+              {residenceTab === 'TREASURE' ? (
+                <TreasureDashboard />
+              ) : (
+                <div className="max-w-4xl mx-auto py-12 px-6 space-y-12">
+                  <div className="text-center space-y-4">
+                    <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6">
+                      <User size={48} className="text-slate-500" />
+                    </div>
+                    <h2 className="text-4xl font-black text-white uppercase tracking-tighter font-display">{userName}</h2>
+                    <p className="text-[#D4AF37] text-[10px] font-bold uppercase tracking-[0.3em]">Résident du Temple</p>
+                  </div>
 
-            <section className="space-y-6">
-              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Détails du Résident</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 rounded-2xl bg-white/[0.01] border border-white/5 flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Abonnement</span>
-                  <span className="text-xs font-black text-white uppercase tracking-widest">Temple Pass (79€)</span>
+                  <section className="p-12 rounded-[3rem] bg-white/[0.02] border border-white/5 space-y-10 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                      <PenTool size={120} className="text-[#D4AF37] -rotate-12" />
+                    </div>
+                    
+                    <div className="text-center space-y-2 relative z-10">
+                      <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Mon Engagement</h3>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Votre loi de discipline personnelle</p>
+                    </div>
+
+                    <div className="space-y-6 relative z-10">
+                      <div className="relative">
+                        <span className="absolute top-6 left-8 text-slate-600 font-serif italic text-xl opacity-50">"Je, {userName}, m'engage à..."</span>
+                        <textarea 
+                          value={userOath}
+                          onChange={(e) => setUserOath(e.target.value)}
+                          placeholder="Définissez votre propre loi de discipline..."
+                          className="w-full h-64 bg-black/40 border border-white/10 rounded-[2rem] p-12 pt-16 text-white font-serif italic text-xl outline-none focus:border-[#D4AF37] transition-all resize-none shadow-inner"
+                        />
+                      </div>
+                      <div className="flex justify-center">
+                        <button className="px-12 py-4 rounded-full bg-[#D4AF37] text-black font-black text-xs uppercase tracking-[0.3em] hover:bg-[#C4A030] transition-all shadow-[0_0_30px_rgba(212,175,55,0.2)]">
+                          Sceller mon serment
+                        </button>
+                      </div>
+                    </div>
+                  </section>
                 </div>
-                <div className="p-6 rounded-2xl bg-white/[0.01] border border-white/5 flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Réduction Active</span>
-                  <span className="text-xs font-black text-[#F59E0B] uppercase tracking-widest">-{MOCK_USER_STATS.activeDiscount}% (Défis)</span>
-                </div>
-              </div>
-            </section>
+              )}
+            </div>
           </div>
         )}
       </main>

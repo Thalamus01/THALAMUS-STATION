@@ -115,10 +115,13 @@ export class EmotionalEngine {
     
     // Rule: SL must be present
     const missingSL = positions.filter((p: any) => !p.sl || p.sl === 0).length;
-    score -= missingSL * 20;
+    score -= missingSL * 30;
 
     // Rule: Max trades per hour
-    if (positions.length > 5) score -= 15;
+    if (positions.length > 5) score -= 20;
+
+    // Rule: Max open positions
+    if (positions.length > 3) score -= 15;
 
     return Math.max(0, score);
   }
@@ -143,13 +146,13 @@ export class EmotionalEngine {
     // (Requires tracking last trade result, simplified for now)
     
     // Overtrading Detection
-    if (positions.length > 5) {
+    if (positions.length > 3) {
       biases.push({
         id: 'overtrading',
         name: 'SURTRADING',
         timestamp: now,
-        description: 'Trop de positions simultanées.',
-        action: 'Fermer les positions les moins rentables.'
+        description: 'Limite de 3 positions simultanées atteinte.',
+        action: 'Fermer les positions excédentaires.'
       });
     }
 

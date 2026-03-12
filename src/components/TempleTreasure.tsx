@@ -66,27 +66,27 @@ export const TempleTreasure: React.FC = () => {
         
         <div className="space-y-2 relative z-10">
           <span className="text-[8px] font-black text-[#D4AF37] uppercase tracking-[0.3em]">Statut Résident</span>
-          <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Abonnement Actif</h3>
+          <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Lien Neural Actif</h3>
           <div className="flex items-center gap-4 pt-2">
             <div className="flex flex-col">
-              <span className="text-[7px] font-bold text-slate-500 uppercase">Prix Initial</span>
-              <span className="text-sm font-mono text-slate-400 line-through">{MOCK_TEMPLE_DATA.pricing.monthly}€</span>
+              <span className="text-[7px] font-bold text-slate-500 uppercase">Tribut de Base</span>
+              <span className="text-sm font-mono text-slate-400 line-through">{MOCK_TEMPLE_DATA.pricing.monthly} pts</span>
             </div>
             <div className="w-px h-6 bg-white/10" />
             <div className="flex flex-col">
-              <span className="text-[7px] font-bold text-slate-500 uppercase">Prix Actuel</span>
-              <span className="text-xl font-mono font-black text-white">{MOCK_USER_STATS.currentPrice}€</span>
+              <span className="text-[7px] font-bold text-slate-500 uppercase">Tribut de Discipline</span>
+              <span className="text-xl font-mono font-black text-white">{MOCK_USER_STATS.currentPrice} pts</span>
             </div>
             <div className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[8px] font-black uppercase">
-              -{MOCK_USER_STATS.activeDiscount}% Appliqué
+              -{MOCK_USER_STATS.activeDiscount}% Optimisation
             </div>
           </div>
         </div>
 
         <div className="flex flex-col items-center md:items-end gap-2 relative z-10">
-          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Économie Annuelle</span>
-          <div className="text-3xl font-black text-[#D4AF37] tracking-tighter">142.20€</div>
-          <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest">Maximum possible : 47€/mois (-40%)</p>
+          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Mérite Accumulé</span>
+          <div className="text-3xl font-black text-[#D4AF37] tracking-tighter">142.20 pts</div>
+          <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest">Optimisation maximale : 47 pts/cycle (-40%)</p>
         </div>
       </section>
 
@@ -150,11 +150,11 @@ export const TempleTreasure: React.FC = () => {
         <div className="flex items-center justify-center gap-8">
           <div className="flex items-center gap-2 text-[8px] font-bold text-slate-500 uppercase tracking-widest">
             <Shield size={12} />
-            Règle de perte : 3 absences = retour prix normal
+            Règle de perte : 3 absences = retour tribut normal
           </div>
           <div className="flex items-center gap-2 text-[8px] font-bold text-slate-500 uppercase tracking-widest">
             <Zap size={12} />
-            Maximum cumulable : -40%
+            Optimisation maximale : -40%
           </div>
         </div>
         <p className="text-[10px] text-slate-600 font-medium leading-relaxed uppercase tracking-widest max-w-xl mx-auto italic">

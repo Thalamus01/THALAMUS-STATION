@@ -103,8 +103,14 @@ export const calculateLots = (balance: number, riskPercent: number, slPoints: nu
   const riskAmount = balance * (riskPercent / 100);
   const slValuePerLot = slPoints * config.tickSize * config.contractSize;
   
+  let lots = 0;
   if (slValuePerLot > 0) {
-    return Number((riskAmount / slValuePerLot).toFixed(2));
+    lots = riskAmount / slValuePerLot;
   }
-  return 0;
+
+  // Enforce Max Leverage 1:30
+  const maxLeverage = 30;
+  const maxLotsByLeverage = (balance * maxLeverage) / config.contractSize;
+  
+  return Number(Math.min(lots, maxLotsByLeverage).toFixed(2));
 };

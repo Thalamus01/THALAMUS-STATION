@@ -63,7 +63,7 @@ export const EmailTemplates = {
         <ul style="padding-left: 20px;">
           <li>Sentinel IA, votre garde du corps émotionnel</li>
           <li>La communauté des résidents</li>
-          <li>Votre premier défi pour réduire votre abonnement</li>
+          <li>Votre premier défi pour réduire votre tribut</li>
         </ul>
         <p>Premier rendez-vous : coaching mardi 20h.</p>
         <p style="font-size: 12px; color: #555; margin-top: 40px;">PS : Écrivez votre serment dans votre profil.</p>
@@ -115,7 +115,7 @@ export const EmailTemplates = {
           <div style="height: 4px; background-color: #222; margin-top: 10px; border-radius: 2px;">
             <div style="height: 100%; width: 0%; background-color: ${GOLD_TEXT};"></div>
           </div>
-          <p style="font-size: 11px; margin-top: 10px; color: #888;">Connectez-vous 30 jours. Gagnez 10% pour toujours.</p>
+          <p style="font-size: 11px; margin-top: 10px; color: #888;">Connectez-vous 30 jours. Gagnez 10% d'optimisation.</p>
         </div>
         <p>Rendez-vous ce soir sur Discord. Votre voisin vous attend.</p>
         <p style="font-size: 14px; font-weight: bold; color: ${GOLD_TEXT}; margin-top: 40px;">Votre numéro de résident : #${residentId}</p>
@@ -135,11 +135,11 @@ export const EmailTemplates = {
         <h1 style="font-family: 'Cinzel', serif; color: ${GOLD_TEXT}; font-size: 24px; margin-bottom: 30px;">THALAMUS</h1>
         <p>Félicitations, ${firstName}.</p>
         <p>${condition}.</p>
-        <p>Votre abonnement passe à <span style="color: ${GOLD_TEXT}; font-weight: bold;">${newPrice}€/mois</span>. Pour toujours.</p>
+        <p>Votre tribut de discipline passe à <span style="color: ${GOLD_TEXT}; font-weight: bold;">${newPrice} pts</span>. Pour toujours.</p>
         <div style="background-color: #111; border: 1px solid #222; padding: 20px; margin: 30px 0; border-radius: 10px;">
           <p style="margin: 0; font-size: 12px; color: #555; text-transform: uppercase; letter-spacing: 2px;">Prochain défi :</p>
           <p style="font-size: 13px; margin-top: 10px; color: #F5F5F0;">0 alerte rouge ignorée → -15% supplémentaires</p>
-          <p style="font-size: 11px; margin-top: 5px; color: #888;">Prix final possible : 47€/mois.</p>
+          <p style="font-size: 11px; margin-top: 5px; color: #888;">Tribut final possible : 47 pts.</p>
         </div>
         <p>Le Temple récompense les constants.</p>
         <div style="margin-top: 40px; border-top: 1px solid #1A1A1A; padding-top: 20px;">
