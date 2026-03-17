@@ -18,6 +18,7 @@ interface DashboardContentProps {
   lastUpdate: number;
   latency: number;
   sentinelData: any;
+  onShowCameleon?: () => void;
   children: React.ReactNode;
 }
 
@@ -35,6 +36,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = React.memo(({
   lastUpdate,
   latency,
   sentinelData,
+  onShowCameleon,
   children
 }) => {
   // Guard against null/undefined data
@@ -76,6 +78,25 @@ export const DashboardContent: React.FC<DashboardContentProps> = React.memo(({
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#0A0A0A] overflow-hidden relative z-[1]">
+      {/* PROMOTIONAL BANNER: PLAN CAMÉLÉON */}
+      <div 
+        className="bg-emerald-500/10 border-b border-emerald-500/20 px-8 py-3 flex justify-between items-center cursor-pointer group hover:bg-emerald-500/20 transition-all"
+        onClick={onShowCameleon}
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
+            <ShieldCheck size={18} className="text-emerald-500" />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Offre Exclusive : Plan Caméléon</p>
+            <p className="text-[12px] font-bold text-white uppercase tracking-tight">Activez l'armure algorithmique pour sécuriser vos profits.</p>
+          </div>
+        </div>
+        <button className="px-4 py-1.5 bg-emerald-500 text-black text-[10px] font-black uppercase tracking-widest rounded-md group-hover:scale-105 transition-transform">
+          Découvrir
+        </button>
+      </div>
+
       {/* Top Stats Bar */}
       <div className="bg-[#0B0E11] border-b border-[#2B2F36] px-8 py-2 flex justify-between items-center shrink-0 z-50">
         <div className="flex gap-10 items-center">

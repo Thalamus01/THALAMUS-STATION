@@ -3,7 +3,7 @@ import {
   Zap, Activity, Loader2, ShieldAlert, CheckCircle2, AlertTriangle, Signal, Unplug, ShieldCheck, Radar,
   Wind, Brain, Timer, Lock, Unlock, MessageSquareQuote, Eye, Bell, TrendingDown, TrendingUp, History,
   Coffee, Moon, Sun, RefreshCcw, LogOut, ChevronRight, BarChart3, Star, Users, FileText, Share2,
-  ChevronDown, Ghost, Target, Menu, Anchor, X, ChevronUp
+  ChevronDown, Ghost, Target, Menu, Anchor, X, ChevronUp, Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TradingViewChart from './components/TradingViewChart';
@@ -13,6 +13,7 @@ import { PositionsList } from './components/trading/PositionsList';
 import MarketWatch from './components/trading/MarketWatch';
 import AccountLinkModal from './components/AccountLinkModal';
 import NeuralChat from './components/NeuralChat';
+import { CameleonLanding } from './src/components/CameleonLanding';
 import { CognitiveTest } from '@/components/CognitiveTest';
 import { CircularClock } from '@/components/CircularClock';
 import { GhostTraderStory } from '@/components/GhostTraderStory';
@@ -422,6 +423,7 @@ export default function App() {
   const [showReflection, setShowReflection] = useState(false);
   const [reflectionAnswer, setReflectionAnswer] = useState('');
   const [showCycleAlert, setShowCycleAlert] = useState(false);
+  const [showCameleonLanding, setShowCameleonLanding] = useState(false);
   const [showCognitiveTest, setShowCognitiveTest] = useState(false);
   const [showClosingRitual, setShowClosingRitual] = useState(false);
   const [showRescueModal, setShowRescueModal] = useState(false);
@@ -892,8 +894,12 @@ export default function App() {
     return <SuccessPage onComplete={() => { setShowSuccess(false); setIsLinked(true); }} />;
   }
 
+  if (showCameleonLanding) {
+    return <CameleonLanding onBack={() => setShowCameleonLanding(false)} />;
+  }
+
   if (!isLinked) {
-    return <LandingPage onEnterCockpit={() => setShowSuccess(true)} />;
+    return <LandingPage onEnterCockpit={() => setShowSuccess(true)} onShowCameleon={() => setShowCameleonLanding(true)} />;
   }
 
   // BANDEAU BAS (UNIFICATION)
@@ -1080,6 +1086,14 @@ export default function App() {
             Protection
             {activeTab === 'SENTINEL' && sentinelTab === 'SHIELD' && <div className="absolute bottom-[-18px] left-0 w-full h-[2px] bg-[#D4AF37]" />}
           </button>
+
+          <button
+            onClick={() => setShowCameleonLanding(true)}
+            className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-500 hover:text-emerald-400 transition-all relative py-1 flex items-center gap-2"
+          >
+            <Shield size={14} />
+            Plan Caméléon
+          </button>
         </nav>
         </div>
 
@@ -1212,6 +1226,13 @@ export default function App() {
                   PROTECTION
                 </button>
 
+                <button 
+                  onClick={() => { setShowCameleonLanding(true); setIsMobileMenuOpen(false); }}
+                  className="text-3xl font-black tracking-tighter text-left uppercase text-emerald-500 flex items-center gap-4"
+                >
+                  PLAN CAMÉLÉON <Shield size={32} />
+                </button>
+
                 <div className="h-px bg-white/10 my-4" />
 
                 <div className="space-y-6">
@@ -1251,6 +1272,7 @@ export default function App() {
             lastUpdate={sentinelState.lastUpdate}
             latency={sentinelState.latency}
             sentinelData={sentinelData}
+            onShowCameleon={() => setShowCameleonLanding(true)}
           >
           <div className="h-full flex flex-row overflow-hidden">
             {/* LEFT DRAWER: MARKETS */}

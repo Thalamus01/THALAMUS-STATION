@@ -6,6 +6,7 @@ import { Logo } from '../src/components/Logo';
 
 interface Props {
   onEnterCockpit: () => void;
+  onShowCameleon?: () => void;
 }
 
 const FAQ_ITEMS = [
@@ -35,7 +36,7 @@ const FAQ_ITEMS = [
   }
 ];
 
-const LandingPage: React.FC<Props> = ({ onEnterCockpit }) => {
+const LandingPage: React.FC<Props> = ({ onEnterCockpit, onShowCameleon }) => {
   const [scrollY, setScrollY] = useState(0);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [remainingSpots, setRemainingSpots] = useState(getRemainingSpots());
@@ -77,6 +78,38 @@ const LandingPage: React.FC<Props> = ({ onEnterCockpit }) => {
         </p>
       </div>
 
+      {/* NAVIGATION BAR */}
+      <nav className="fixed top-[40px] left-0 w-full h-[60px] bg-black/80 backdrop-blur-md border-b border-white/5 z-[190] flex items-center justify-between px-8">
+        <div className="flex items-center gap-2">
+          <Logo variant="hero" size={32} />
+          <span className="text-sm font-black tracking-tighter uppercase italic">Thalamus</span>
+        </div>
+        <div className="flex items-center gap-8">
+          <button 
+            onClick={onShowCameleon}
+            className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-2"
+          >
+            <Shield size={14} /> Plan Caméléon
+          </button>
+          <button 
+            onClick={onEnterCockpit}
+            className="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest transition-all"
+          >
+            Cockpit
+          </button>
+        </div>
+      </nav>
+
+      {/* FLOATING CAMELEON BUTTON */}
+      <button 
+        onClick={onShowCameleon}
+        className="fixed bottom-8 right-8 z-[250] group flex items-center gap-3 bg-emerald-500 text-black px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-[0_20px_50px_rgba(16,185,129,0.3)] hover:scale-110 active:scale-95 transition-all"
+      >
+        <Shield size={18} />
+        <span>Plan Caméléon</span>
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-emerald-500 animate-ping" />
+      </button>
+
       {/* SCANNER LINE */}
       <div 
         className="fixed left-0 w-full h-px bg-cyan-500/50 shadow-[0_0_15px_#22d3ee] z-[100] pointer-events-none transition-all duration-300"
@@ -84,7 +117,7 @@ const LandingPage: React.FC<Props> = ({ onEnterCockpit }) => {
       />
 
       {/* HERO SECTION */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center p-6 text-center overflow-hidden">
+      <section className="relative min-h-screen flex flex-col items-center justify-center p-6 pt-[120px] text-center overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_#22d3ee08_0%,_transparent_50%)]" />
         
         <div className="relative z-10 space-y-8 animate-in fade-in zoom-in duration-1000">
@@ -119,13 +152,53 @@ const LandingPage: React.FC<Props> = ({ onEnterCockpit }) => {
             Thalamus synchronise votre biologie et votre terminal MT5 pour éliminer l'erreur humaine par l'IA neuro-cognitive.
           </p>
 
-          <div className="pt-10">
+          <div className="pt-10 flex flex-col md:flex-row items-center justify-center gap-4">
             <button 
               onClick={() => document.getElementById('problem')?.scrollIntoView({ behavior: 'smooth' })}
-              className="group w-[90%] md:w-auto px-10 py-6 bg-[#FFB800] text-black rounded-2xl font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center gap-4 mx-auto transition-all hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(255,184,0,0.2)] animate-pulse-gold"
+              className="group w-[90%] md:w-auto px-10 py-6 bg-[#FFB800] text-black rounded-2xl font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center gap-4 transition-all hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(255,184,0,0.2)] animate-pulse-gold"
             >
               RÉSERVER MON ACCÈS PIONNIER <ArrowDown size={18} className="group-hover:translate-y-1 transition-transform" />
             </button>
+            <button 
+              onClick={onShowCameleon}
+              className="group w-[90%] md:w-auto px-10 py-6 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-2xl font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center gap-4 transition-all hover:bg-emerald-500/20 hover:scale-105 active:scale-95"
+            >
+              DÉCOUVRIR LE PLAN CAMÉLÉON <Shield size={18} />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURED: PLAN CAMÉLÉON */}
+      <section className="py-20 px-6 bg-emerald-950/10 border-y border-emerald-500/20 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-emerald-500/5 blur-[100px] rounded-full pointer-events-none" />
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-12">
+          <div className="flex-1 space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-400">
+              <Star size={12} /> Nouveau : L'Armure du Trader
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter leading-none">
+              DÉCOUVREZ LE <br/><span className="text-emerald-500">PLAN CAMÉLÉON</span>
+            </h2>
+            <p className="text-lg text-slate-400 font-medium leading-relaxed">
+              L'algorithme qui ne promet rien, mais protège tout. Externalisez votre discipline et survivez aux marchés les plus brutaux.
+            </p>
+            <button 
+              onClick={onShowCameleon}
+              className="px-8 py-4 bg-emerald-500 text-black font-black uppercase tracking-[0.2em] text-xs rounded-xl hover:scale-105 transition-all flex items-center gap-3 shadow-[0_10px_30px_rgba(16,185,129,0.2)]"
+            >
+              VOIR L'OFFRE CAMÉLÉON <ChevronRight size={18} />
+            </button>
+          </div>
+          <div className="flex-1 relative">
+            <div className="aspect-video bg-black/40 rounded-3xl border border-white/10 flex items-center justify-center overflow-hidden group cursor-pointer" onClick={onShowCameleon}>
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Shield size={80} className="text-emerald-500/20 group-hover:text-emerald-500/40 transition-all group-hover:scale-110" />
+              <div className="absolute bottom-6 left-6 right-6 p-4 bg-black/60 backdrop-blur-md rounded-xl border border-white/5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1">Système de Protection</p>
+                <p className="text-sm font-bold text-white">"Le caméléon ne change pas de couleur pour dominer. Il change pour survivre."</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>

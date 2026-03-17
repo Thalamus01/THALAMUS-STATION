@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Users, CheckCircle2, XCircle, Plus, Calendar, Trash2, ShieldAlert, Activity, DollarSign, Brain, Search, Lock, Zap, RefreshCw, AlertTriangle, Terminal, Save, ArrowRight, Download, UserPlus, ShieldCheck } from 'lucide-react';
+import { X, Users, CheckCircle2, XCircle, Plus, Calendar, Trash2, ShieldAlert, Activity, DollarSign, Brain, Search, Lock, Zap, RefreshCw, AlertTriangle, Terminal, Save, ArrowRight, Download, UserPlus, ShieldCheck, Key, FileCode } from 'lucide-react';
 import { ThalamusUser, getStoredUsers, saveUsers, updateUserSettings, addUser, getRemainingSpots, setRemainingSpots } from '../userManagementService';
+import { LicenseService, License } from '../src/services/LicenseService';
 
 interface Props {
   onClose: () => void;
@@ -11,6 +12,8 @@ const AdminDashboard: React.FC<Props> = ({ onClose }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [users, setUsers] = useState<ThalamusUser[]>([]);
+  const [licenses, setLicenses] = useState<License[]>([]);
+  const [activeTab, setActiveTab] = useState<'USERS' | 'LICENSES'>('USERS');
   const [searchTerm, setSearchTerm] = useState('');
   const [remainingSpots, setRemainingSpotsState] = useState(getRemainingSpots());
   
@@ -28,8 +31,10 @@ const AdminDashboard: React.FC<Props> = ({ onClose }) => {
   useEffect(() => {
     if (isAuthenticated) {
       setUsers(getStoredUsers());
+      setLicenses(LicenseService.getAllLicenses());
       const interval = setInterval(() => {
         setUsers(getStoredUsers());
+        setLicenses(LicenseService.getAllLicenses());
       }, 5000);
       return () => clearInterval(interval);
     }
@@ -66,6 +71,13 @@ const AdminDashboard: React.FC<Props> = ({ onClose }) => {
   const handleUpdateSpots = () => {
     setRemainingSpots(remainingSpots);
     alert(`Compteur de places mis à jour : ${remainingSpots}`);
+  };
+
+  const handleRevokeLicense = (licenseId: string) => {
+    if (confirm("Voulez-vous vraiment révoquer cette licence ?")) {
+      LicenseService.revokeLicense(licenseId);
+      setLicenses(LicenseService.getAllLicenses());
+    }
   };
 
   const exportToCSV = () => {
@@ -184,14 +196,20 @@ const AdminDashboard: React.FC<Props> = ({ onClose }) => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full lg:w-auto">
-            <div className="px-4 py-2 bg-slate-950 rounded-xl border border-white/5 flex flex-col">
-              <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest mb-1 flex items-center gap-1"><Users size={8} /> Actifs</span>
-              <span className="text-lg font-black italic text-cyan-400">{stats.activeNodes}</span>
-            </div>
-            <div className="px-4 py-2 bg-slate-950 rounded-xl border border-white/5 flex flex-col">
-              <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest mb-1 flex items-center gap-1"><Activity size={8} /> En Attente</span>
-              <span className="text-lg font-black italic text-amber-400">{stats.pendingNodes}</span>
-            </div>
+            <button 
+              onClick={() => setActiveTab('USERS')}
+              className={`px-4 py-2 rounded-xl border flex flex-col transition-all ${activeTab === 'USERS' ? 'bg-cyan-500/10 border-cyan-500/50' : 'bg-slate-950 border-white/5'}`}
+            >
+              <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest mb-1 flex items-center gap-1"><Users size={8} /> Pionniers</span>
+              <span className={`text-lg font-black italic ${activeTab === 'USERS' ? 'text-cyan-400' : 'text-slate-400'}`}>{stats.totalUsers}</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('LICENSES')}
+              className={`px-4 py-2 rounded-xl border flex flex-col transition-all ${activeTab === 'LICENSES' ? 'bg-emerald-500/10 border-emerald-500/50' : 'bg-slate-950 border-white/5'}`}
+            >
+              <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest mb-1 flex items-center gap-1"><Key size={8} /> Licences</span>
+              <span className={`text-lg font-black italic ${activeTab === 'LICENSES' ? 'text-emerald-400' : 'text-slate-400'}`}>{licenses.length}</span>
+            </button>
             <div className="px-4 py-2 bg-slate-950 rounded-xl border border-white/5 flex flex-col">
               <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest mb-1 flex items-center gap-1"><DollarSign size={8} /> Equity</span>
               <span className="text-lg font-black italic text-emerald-400">${(stats.totalEquity / 1000000).toFixed(1)}M</span>
@@ -246,110 +264,186 @@ const AdminDashboard: React.FC<Props> = ({ onClose }) => {
         {/* MAIN MONITORING TABLE */}
         <div className="flex-1 glass-panel rounded-[2.5rem] border border-white/5 bg-slate-900/20 overflow-hidden flex flex-col shadow-2xl">
           <div className="overflow-x-auto scrollbar-hide">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/5 bg-slate-950/50">
-                  <th className="px-8 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Trader / ID</th>
-                  <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Statut</th>
-                  <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Inscription</th>
-                  <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Flux MT5</th>
-                  <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">MHI Score</th>
-                  <th className="px-8 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {filteredUsers.map((user) => (
-                  <tr key={user.id} className={`group hover:bg-white/5 transition-all ${user.status === 'SUSPENDED' ? 'border-l-4 border-l-red-600 bg-red-500/5' : user.status === 'PENDING' ? 'border-l-4 border-l-amber-500 bg-amber-500/5' : 'border-l-4 border-l-emerald-500'}`}>
-                    <td className="px-8 py-6">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-black italic tracking-wider uppercase text-white">{user.id}</span>
-                        <span className="text-[9px] text-slate-500 font-bold lowercase">{user.email || 'Pas d\'email'}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-6">
-                      <div className="flex items-center gap-2">
-                        {user.status === 'ACTIVE' ? (
-                          <div className="flex items-center gap-2 px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
-                            <CheckCircle2 size={10} className="text-emerald-400" />
-                            <span className="text-[9px] font-black text-emerald-400 uppercase">ACTIVÉ</span>
+            {activeTab === 'USERS' ? (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/5 bg-slate-950/50">
+                    <th className="px-8 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Trader / ID</th>
+                    <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Statut</th>
+                    <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Inscription</th>
+                    <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Flux MT5</th>
+                    <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">MHI Score</th>
+                    <th className="px-8 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filteredUsers.map((user) => (
+                    <tr key={user.id} className={`group hover:bg-white/5 transition-all ${user.status === 'SUSPENDED' ? 'border-l-4 border-l-red-600 bg-red-500/5' : user.status === 'PENDING' ? 'border-l-4 border-l-amber-500 bg-amber-500/5' : 'border-l-4 border-l-emerald-500'}`}>
+                      <td className="px-8 py-6">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-black italic tracking-wider uppercase text-white">{user.id}</span>
+                          <span className="text-[9px] text-slate-500 font-bold lowercase">{user.email || 'Pas d\'email'}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="flex items-center gap-2">
+                          {user.status === 'ACTIVE' ? (
+                            <div className="flex items-center gap-2 px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
+                              <CheckCircle2 size={10} className="text-emerald-400" />
+                              <span className="text-[9px] font-black text-emerald-400 uppercase">ACTIVÉ</span>
+                            </div>
+                          ) : user.status === 'PENDING' ? (
+                            <div className="flex items-center gap-2 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20">
+                              <RefreshCw size={10} className="text-amber-400 animate-spin" />
+                              <span className="text-[9px] font-black text-amber-400 uppercase">EN ATTENTE</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 px-2 py-1 rounded bg-red-500/10 border border-red-500/20">
+                              <ShieldAlert size={10} className="text-red-500" />
+                              <span className="text-[9px] font-black text-red-500 uppercase">SUSPENDU</span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-6">
+                        <span className="text-[10px] font-bold text-slate-400">
+                          {new Date(user.registrationDate).toLocaleDateString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-1.5 h-1.5 rounded-full ${user.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-700'}`} />
+                            <span className="text-[10px] font-mono font-bold text-white">${user.lastBalance.toLocaleString()}</span>
                           </div>
-                        ) : user.status === 'PENDING' ? (
-                          <div className="flex items-center gap-2 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20">
-                            <RefreshCw size={10} className="text-amber-400 animate-spin" />
-                            <span className="text-[9px] font-black text-amber-400 uppercase">EN ATTENTE</span>
+                          <span className="text-[8px] text-slate-600 uppercase font-black tracking-tighter">{user.platform} NODE active</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="flex items-center gap-3">
+                           <div className="w-12 h-1 bg-slate-950 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full transition-all duration-1000 ${user.mhiScore < 30 ? 'bg-red-500' : user.mhiScore < 60 ? 'bg-amber-500' : 'bg-emerald-500'}`} 
+                                style={{ width: `${user.mhiScore}%` }} 
+                              />
+                           </div>
+                           <span className={`text-[10px] font-black ${user.mhiScore < 30 ? 'text-red-500' : 'text-slate-400'}`}>{user.mhiScore}%</span>
+                        </div>
+                      </td>
+                      <td className="px-8 py-6 text-right">
+                        <div className="flex justify-end gap-2">
+                          {user.status !== 'ACTIVE' && (
+                            <button 
+                              onClick={() => updateUserStatus(user.id, 'ACTIVE')}
+                              className="p-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg transition-all"
+                              title="Approuver"
+                            >
+                              <CheckCircle2 size={16} />
+                            </button>
+                          )}
+                          {user.status === 'ACTIVE' && (
+                            <button 
+                              onClick={() => updateUserStatus(user.id, 'SUSPENDED')}
+                              className="p-2 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-all"
+                              title="Révoquer / Suspendre"
+                            >
+                              <XCircle size={16} />
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => openExtensionModal(user)}
+                            className="p-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500 hover:text-white rounded-lg transition-all"
+                            title="Modifier Expiration"
+                          >
+                            <Calendar size={16} />
+                          </button>
+                          <button 
+                            onClick={() => deleteUser(user.id)}
+                            className="p-2 bg-slate-900 border border-white/10 text-slate-500 hover:bg-red-950 hover:text-red-500 hover:border-red-500/50 rounded-lg transition-all"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/5 bg-slate-950/50">
+                    <th className="px-8 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Licence Key</th>
+                    <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Trader ID</th>
+                    <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Compte MT5</th>
+                    <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Date Création</th>
+                    <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Statut</th>
+                    <th className="px-8 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {licenses.filter(l => 
+                    l.key.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                    l.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    l.accountNumber?.includes(searchTerm)
+                  ).map((license) => (
+                    <tr key={license.id} className="group hover:bg-white/5 transition-all">
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-3">
+                          <Key size={14} className="text-emerald-500" />
+                          <span className="text-sm font-mono font-black text-white tracking-wider">{license.key}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-6">
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{license.userId}</span>
+                      </td>
+                      <td className="px-6 py-6">
+                        <span className="text-sm font-mono font-bold text-white">{license.accountNumber || '---'}</span>
+                      </td>
+                      <td className="px-6 py-6">
+                        <span className="text-[10px] font-bold text-slate-500">
+                          {new Date(license.createdAt).toLocaleDateString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-6">
+                        {license.status === 'ACTIVE' ? (
+                          <div className="flex items-center gap-2 px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 w-fit">
+                            <CheckCircle2 size={10} className="text-emerald-400" />
+                            <span className="text-[9px] font-black text-emerald-400 uppercase">VALIDE</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 px-2 py-1 rounded bg-red-500/10 border border-red-500/20">
-                            <ShieldAlert size={10} className="text-red-500" />
-                            <span className="text-[9px] font-black text-red-500 uppercase">SUSPENDU</span>
+                          <div className="flex items-center gap-2 px-2 py-1 rounded bg-red-500/10 border border-red-500/20 w-fit">
+                            <XCircle size={10} className="text-red-500" />
+                            <span className="text-[9px] font-black text-red-500 uppercase">RÉVOQUÉ</span>
                           </div>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-6">
-                      <span className="text-[10px] font-bold text-slate-400">
-                        {new Date(user.registrationDate).toLocaleDateString()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-6">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-1.5 h-1.5 rounded-full ${user.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-700'}`} />
-                          <span className="text-[10px] font-mono font-bold text-white">${user.lastBalance.toLocaleString()}</span>
-                        </div>
-                        <span className="text-[8px] text-slate-600 uppercase font-black tracking-tighter">{user.platform} NODE active</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-6">
-                      <div className="flex items-center gap-3">
-                         <div className="w-12 h-1 bg-slate-950 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full transition-all duration-1000 ${user.mhiScore < 30 ? 'bg-red-500' : user.mhiScore < 60 ? 'bg-amber-500' : 'bg-emerald-500'}`} 
-                              style={{ width: `${user.mhiScore}%` }} 
-                            />
-                         </div>
-                         <span className={`text-[10px] font-black ${user.mhiScore < 30 ? 'text-red-500' : 'text-slate-400'}`}>{user.mhiScore}%</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6 text-right">
-                      <div className="flex justify-end gap-2">
-                        {user.status !== 'ACTIVE' && (
+                      </td>
+                      <td className="px-8 py-6 text-right">
+                        {license.status === 'ACTIVE' && (
                           <button 
-                            onClick={() => updateUserStatus(user.id, 'ACTIVE')}
-                            className="p-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg transition-all"
-                            title="Approuver"
-                          >
-                            <CheckCircle2 size={16} />
-                          </button>
-                        )}
-                        {user.status === 'ACTIVE' && (
-                          <button 
-                            onClick={() => updateUserStatus(user.id, 'SUSPENDED')}
+                            onClick={() => handleRevokeLicense(license.id)}
                             className="p-2 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-all"
-                            title="Révoquer / Suspendre"
+                            title="Révoquer la licence"
                           >
-                            <XCircle size={16} />
+                            <ShieldAlert size={16} />
                           </button>
                         )}
-                        <button 
-                          onClick={() => openExtensionModal(user)}
-                          className="p-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500 hover:text-white rounded-lg transition-all"
-                          title="Modifier Expiration"
-                        >
-                          <Calendar size={16} />
-                        </button>
-                        <button 
-                          onClick={() => deleteUser(user.id)}
-                          className="p-2 bg-slate-900 border border-white/10 text-slate-500 hover:bg-red-950 hover:text-red-500 hover:border-red-500/50 rounded-lg transition-all"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                    </tr>
+                  ))}
+                  {licenses.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-8 py-20 text-center">
+                        <div className="flex flex-col items-center gap-4 opacity-20">
+                          <FileCode size={48} />
+                          <span className="text-[10px] font-black uppercase tracking-[0.3em]">Aucune licence générée</span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
