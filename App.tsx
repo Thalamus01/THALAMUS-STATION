@@ -3,14 +3,13 @@ import {
   Zap, Activity, Loader2, ShieldAlert, CheckCircle2, AlertTriangle, Signal, Unplug, ShieldCheck, Radar,
   Wind, Brain, Timer, Lock, Unlock, MessageSquareQuote, Eye, Bell, TrendingDown, TrendingUp, History,
   Coffee, Moon, Sun, RefreshCcw, LogOut, ChevronRight, BarChart3, Star, Users, FileText, Share2,
-  ChevronDown, Ghost, Target, Menu, Anchor, X, ChevronUp, Shield
+  ChevronDown, Ghost, Target, Menu, Anchor, X, ChevronUp, Shield, EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import TradingViewChart from './components/TradingViewChart';
+import { NeuralSupervisor } from './src/components/NeuralSupervisor';
+import { NeuralBehavioralDashboard } from './src/components/NeuralBehavioralDashboard';
 import { SentinelPanel } from './components/trading/SentinelPanel';
-import { ActionPanel } from './components/trading/ActionPanel';
 import { PositionsList } from './components/trading/PositionsList';
-import MarketWatch from './components/trading/MarketWatch';
 import AccountLinkModal from './components/AccountLinkModal';
 import NeuralChat from './components/NeuralChat';
 import { CameleonLanding } from './src/components/CameleonLanding';
@@ -26,7 +25,6 @@ import { Logo } from './src/components/Logo';
 import { FAQ } from './src/components/FAQ';
 import { ASSET_CONFIGS, calculateLots } from './constants';
 import { FeedbackSystem } from '@/components/FeedbackSystem';
-import { DashboardContent } from '@/components/DashboardContent';
 import { useSentinelRealtime } from '@/hooks/useSentinelRealtime';
 import { EmotionalEngine } from '@/services/EmotionalEngine';
 import { DebugPanel } from '@/components/DebugPanel';
@@ -1258,180 +1256,126 @@ export default function App() {
 
       {activeTab === 'COCKPIT' ? (
         <ErrorBoundary>
-          <DashboardContent
-            accountData={accountData}
-            positions={positions}
-            isDemoMode={isDemoMode}
-            showProfit={showProfit}
-            handleRevealProfit={handleRevealProfit}
-            showBalance={showBalance}
-            handleRevealBalance={handleRevealBalance}
-            hasSL={hasSL}
-            disciplineScore={sentinelData.disciplineScore}
-            mt5Connected={mt5Connected}
-            lastUpdate={sentinelState.lastUpdate}
-            latency={sentinelState.latency}
-            sentinelData={sentinelData}
-            onShowCameleon={() => setShowCameleonLanding(true)}
-          >
-          <div className="h-full flex flex-row overflow-hidden">
-            {/* LEFT DRAWER: MARKETS */}
-            <div className="flex-1 flex flex-col min-w-0">
-              <div className="flex-1 flex overflow-hidden">
-                {/* LEFT: SENTINEL IA */}
-                <aside className="hidden lg:block w-[240px] border-r border-[#2B2F36]">
-                  <SentinelPanel 
-                    vitals={vitals} 
-                    sentinelData={sentinelData} 
-                    currentMode={cycleData.currentMode} 
-                    onOpenFAQ={() => setShowFAQ(true)}
-                    userProfile={userProfile}
-                    adjustedMaxLoss={sentinelState.adjustedMaxLoss}
-                  />
-                </aside>
-
-                {/* LEFT-CENTER: MARKET WATCH */}
-                <aside className="hidden xl:block w-[220px] border-r border-[#2B2F36]">
-                  <MarketWatch 
-                    marketData={marketData}
-                    onSelectSymbol={(s) => addAssetFromMT5(s)}
-                    currentSymbol={currentAsset}
-                  />
-                </aside>
-
-                {/* CENTER: CHART(S) */}
-                <section className="flex-1 relative bg-black flex flex-col overflow-hidden">
-                  {activeAssets.length === 0 ? (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center p-12 space-y-4">
-                      <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
-                        <Activity size={32} className="text-[#444]" />
-                      </div>
-                      <div className="space-y-1">
-                        <h3 className="text-white font-bold uppercase tracking-widest text-sm">Cockpit Vide</h3>
-                        <p className="text-[#666] text-xs uppercase tracking-wider">Ajoutez un marché depuis MT5 ou le menu latéral</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex-1 flex flex-col relative">
-                      {/* PRINCIPAL CHART */}
-                      <div className="flex-1 relative">
-                        <TradingViewChart symbol={currentAsset} isLive={isFluxLive} />
-                        
-                        {/* MARKET TABS (Inside Chart Area) */}
-                        <div className="absolute top-4 left-4 z-10 flex items-center gap-1 max-w-[calc(100%-100px)] overflow-x-auto no-scrollbar pb-2">
-                          {activeAssets.map((asset, idx) => (
-                            <button
-                              key={asset}
-                              onClick={() => setCurrentAsset(asset)}
-                              className={`px-3 py-1.5 rounded bg-black/80 backdrop-blur-md border transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shrink-0 whitespace-nowrap ${
-                                currentAsset === asset 
-                                  ? 'border-[#F59E0B] text-[#F5F5F0]' 
-                                  : 'border-white/10 text-[#666] hover:text-[#888] hover:border-white/20'
-                              }`}
-                            >
-                              {currentAsset === asset && <span className="w-1 h-1 rounded-full bg-[#F59E0B]" />}
-                              {asset}
-                              <span className="text-[8px] opacity-30 ml-1">Alt+{idx + 1}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* SECONDARY BAR */}
-                      {secondaryAssets.length > 0 && (
-                        <div className={`absolute bottom-0 left-0 right-0 z-20 transition-all duration-300 ${isSecondaryBarOpen ? 'h-[200px]' : 'h-10'}`}>
-                          {/* TOGGLE BAR */}
-                          <button 
-                            onClick={() => setIsSecondaryBarOpen(!isSecondaryBarOpen)}
-                            className="w-full h-10 bg-[#0D0D0D] border-t border-[#1A1A1A] flex items-center justify-between px-6 hover:bg-[#151515] transition-colors"
-                          >
-                            <div className="flex items-center gap-3 text-[10px] font-black text-[#888] uppercase tracking-widest">
-                              <ChevronUp size={14} className={`transition-transform duration-300 ${isSecondaryBarOpen ? 'rotate-180' : ''}`} />
-                              {secondaryAssets.length} marchés secondaires
-                            </div>
-                            <div className="text-[9px] text-[#444] font-bold uppercase tracking-widest">
-                              {secondaryAssets.join(' • ')}
-                            </div>
-                          </button>
-
-                          {/* MINI CHARTS GRID */}
-                          {isSecondaryBarOpen && (
-                            <div className="h-[160px] bg-[#0A0A0A] flex gap-1 p-1">
-                              {secondaryAssets.map(asset => (
-                                <div 
-                                  key={asset}
-                                  onClick={() => setCurrentAsset(asset)}
-                                  className="flex-1 relative group cursor-pointer border border-white/5 hover:border-[#F59E0B]/30 transition-all overflow-hidden"
-                                >
-                                  <div className="absolute inset-0 pointer-events-none opacity-60 group-hover:opacity-100 transition-opacity">
-                                    <TradingViewChart symbol={asset} />
-                                  </div>
-                                  <div className="absolute top-2 left-2 z-10 px-2 py-1 rounded bg-black/80 backdrop-blur-md border border-white/10 text-[9px] font-black text-[#666] group-hover:text-[#F5F5F0] uppercase tracking-widest">
-                                    {asset}
-                                  </div>
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); removeAsset(asset); }}
-                                    className="absolute top-2 right-2 z-10 p-1 rounded bg-black/80 backdrop-blur-md border border-white/10 text-[#444] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                                  >
-                                    <X size={10} />
-                                  </button>
-                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                                    <span className="text-[9px] font-black text-white uppercase tracking-widest bg-black/60 px-2 py-1 rounded border border-white/10">Swap Principal</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </section>
-
-                {/* RIGHT: ACTIONS */}
-                <aside className="hidden xl:block w-[280px]">
-                  {positions.length > 0 ? (
-                    <div className="h-full flex flex-col gap-4">
-                      <div className="flex-1">
-                        <PositionsList 
-                          positions={positions}
-                          onClose={closePosition}
-                          onModify={(id, sl, tp) => updatePosition(id, sl, tp)}
-                        />
-                      </div>
-                      <div className="h-auto">
-                        <ContextePerdu 
-                          tempsEcoule={Math.floor((Date.now() - new Date(positions[0].timestamp).getTime()) / 60000)}
-                          onVoirPrix={() => setShowProfit(true)}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <ActionPanel 
-                      onExecute={handleTrade}
-                      isExecuting={isExecuting}
-                      currentMode={cycleData.currentMode}
-                      riskPercent={riskPercent}
-                      setRiskPercent={setRiskPercent}
-                      slPoints={slPoints}
-                      setSlPoints={setSlPoints}
-                      tpPoints={tpPoints}
-                      setTpPoints={setTpPoints}
-                      currentLot={currentLot}
-                      balance={accountData?.balance || 0}
-                      symbol={currentAsset}
-                      ticks={sentinelState.ticks}
-                    />
-                  )}
-                </aside>
+          <div className="flex-1 flex flex-col overflow-hidden bg-[#050505]">
+            {/* MINIMALIST TOP BAR */}
+            <header className="h-14 border-b border-white/5 bg-black/40 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-50">
+              <div className="flex items-center gap-8">
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-[#444] uppercase tracking-[0.2em]">Solde MT5</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white">
+                      {showBalance ? `${(accountData?.balance || 0).toLocaleString()} $` : '••••••'}
+                    </span>
+                    <button onClick={handleRevealBalance} className="text-[#444] hover:text-[#D4AF37] transition-colors">
+                      {showBalance ? <EyeOff size={10} /> : <Eye size={10} />}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-[#444] uppercase tracking-[0.2em]">Profit Session</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-bold ${accountData?.profit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                      {showProfit ? `${accountData?.profit >= 0 ? '+' : ''}${(accountData?.profit || 0).toLocaleString()} $` : '••••••'}
+                    </span>
+                    <button onClick={handleRevealProfit} className="text-[#444] hover:text-[#D4AF37] transition-colors">
+                      {showProfit ? <EyeOff size={10} /> : <Eye size={10} />}
+                    </button>
+                  </div>
+                </div>
+                <div className="h-6 w-px bg-white/5" />
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[9px] font-black text-white uppercase tracking-widest">Bridge MT5 : Connecté</span>
+                  </div>
+                  <span className="text-[9px] font-bold text-[#444] uppercase tracking-widest">Latence: {sentinelState.latency}ms</span>
+                </div>
               </div>
 
-              {/* BOTTOM BANNER */}
-              <AlertBanner mode={cycleData.currentMode} score={sentinelData.disciplineScore} />
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setShowCameleonLanding(true)}
+                  className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-md text-[9px] font-black text-emerald-500 uppercase tracking-widest hover:bg-emerald-500/20 transition-all"
+                >
+                  Plan Caméléon Actif
+                </button>
+                <div className="h-6 w-px bg-white/5" />
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <div className="text-[8px] font-black text-[#444] uppercase tracking-widest">Discipline</div>
+                    <div className={`text-[10px] font-bold uppercase ${sentinelData.disciplineScore > 80 ? 'text-emerald-500' : 'text-[#F59E0B]'}`}>
+                      {sentinelData.disciplineScore}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <div className="flex-1 flex flex-row overflow-hidden">
+              {/* LEFT: SYSTEM STATUS */}
+              <aside className="hidden lg:block w-[280px] border-r border-white/5 bg-[#080808]">
+                <SentinelPanel 
+                  vitals={vitals} 
+                  sentinelData={sentinelData} 
+                  currentMode={cycleData.currentMode} 
+                  onOpenFAQ={() => setShowFAQ(true)}
+                  userProfile={userProfile}
+                  adjustedMaxLoss={sentinelState.adjustedMaxLoss}
+                />
+              </aside>
+
+              {/* CENTER: NEURAL COMMAND CENTER */}
+              <main className="flex-1 relative bg-black flex flex-col overflow-hidden">
+                <NeuralBehavioralDashboard 
+                  disciplineScore={sentinelData.disciplineScore}
+                  stressLevel={vitals.stressLevel}
+                  cognitiveClarity={vitals.cognitiveClarity}
+                  impulsivity={vitals.impulsivity}
+                  detectedBiases={sentinelData.detectedBiases}
+                  accountProfit={accountData?.profit || 0}
+                  mt5Connected={mt5Connected}
+                />
+              </main>
+
+              {/* RIGHT: ADVICE & FEEDBACK */}
+              <aside className="hidden xl:flex w-[350px] flex-col border-l border-white/5 bg-[#080808]">
+                <div className="flex-1 overflow-hidden flex flex-col">
+                  <NeuralSupervisor isConnected={sentinelState.isConnected} />
+                </div>
+
+                {positions.length > 0 && (
+                  <div className="h-[300px] border-t border-white/5 bg-black/40">
+                    <div className="p-3 border-b border-white/5 bg-white/[0.02]">
+                      <h4 className="text-[9px] font-black text-[#666] uppercase tracking-[0.2em]">Positions MT5 Actives</h4>
+                    </div>
+                    <PositionsList 
+                      positions={positions}
+                      onClose={closePosition}
+                      onModify={(id, sl, tp) => updatePosition(id, sl, tp)}
+                    />
+                  </div>
+                )}
+
+                {positions.length === 0 && (
+                  <div className="p-6 border-t border-white/5 bg-black/20">
+                    <div className="flex items-center justify-between text-[9px] font-black text-[#444] uppercase tracking-widest mb-4">
+                      <span>Analyse de Flux</span>
+                      <span className="text-emerald-500">En attente</span>
+                    </div>
+                    <div className="bg-white/[0.02] rounded-lg p-4 border border-white/5">
+                      <p className="text-[9px] text-[#666] italic leading-relaxed text-center">
+                        "Aucune position ouverte. Thalamus surveille les opportunités rationnelles."
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </aside>
             </div>
+
+            {/* BOTTOM ALERT RAIL */}
+            <AlertBanner mode={cycleData.currentMode} score={sentinelData.disciplineScore} />
           </div>
-        </DashboardContent>
-      </ErrorBoundary>
+        </ErrorBoundary>
       ) : (
         <main className="flex-1 overflow-auto pb-12 px-6">
           {activeTab === 'SENTINEL' && (

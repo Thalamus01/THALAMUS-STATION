@@ -60,209 +60,127 @@ export const SentinelPanel: React.FC<Props> = ({ vitals, sentinelData, currentMo
   };
 
   return (
-    <div className="h-full flex flex-col gap-6 p-5 bg-[#0B0E11] border-r border-[#1A1A1A] overflow-y-auto no-scrollbar">
-      <div className="flex items-center gap-3 mb-1">
+    <div className="h-full flex flex-col gap-6 p-5 bg-[#080808] border-r border-white/5 overflow-y-auto no-scrollbar">
+      <div className="flex items-center gap-3 mb-2">
         <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
           <Brain size={20} strokeWidth={1.5} className="text-emerald-500" />
         </div>
         <div>
-          <h3 className="text-[12px] uppercase tracking-[1.5px] text-[#F5F5F0] font-black">Sentinel IA</h3>
-          <p className="text-[10px] uppercase text-emerald-500 font-bold tracking-widest">
-            {userProfile?.name || 'Initialisation...'}
+          <h3 className="text-[11px] uppercase tracking-[2px] text-white font-black">Sentinel IA</h3>
+          <p className="text-[9px] uppercase text-[#444] font-bold tracking-widest">
+            Système de Protection
           </p>
         </div>
       </div>
 
-      {/* SHIELD HEALTH */}
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <span className="text-[9px] uppercase tracking-[1.5px] text-[#666] flex items-center gap-1">
-            <ShieldCheck size={10} /> Santé du Bouclier
-          </span>
-          <span className={`text-[9px] font-black uppercase tracking-widest ${getScoreColor(sentinelData.disciplineScore)}`}>
-            {sentinelData.disciplineScore >= 85 ? 'OPTIMAL' : sentinelData.disciplineScore >= 40 ? 'VIGILANCE' : 'CRITIQUE'}
-          </span>
+      {/* NEURAL BRIDGE STATUS */}
+      <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap size={14} className="text-cyan-400" />
+            <span className="text-[10px] uppercase tracking-[1.5px] text-white font-black">Neural Bridge</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Sync</span>
+          </div>
         </div>
-        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-          <div 
-            className={`h-full transition-all duration-500 ${getProgressColor(sentinelData.disciplineScore)}`}
-            style={{ width: `${sentinelData.disciplineScore}%` }}
-          />
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-[9px] uppercase tracking-widest text-[#444]">
+            <span>Liaison MT5</span>
+            <span className="text-white font-bold">Active</span>
+          </div>
+          <div className="flex justify-between items-center text-[9px] uppercase tracking-widest text-[#444]">
+            <span>Latence Flux</span>
+            <span className="text-white font-bold">12ms</span>
+          </div>
+          <div className="flex justify-between items-center text-[9px] uppercase tracking-widest text-[#444]">
+            <span>Protocole</span>
+            <span className="text-[#666] font-bold italic">CML_v2</span>
+          </div>
         </div>
       </div>
 
-      {/* UNIVERSAL PROTECTION PANEL */}
-      <div className="p-5 rounded-xl bg-emerald-500/[0.03] border border-emerald-500/20 space-y-4">
-        <div className="flex items-center gap-3">
-          <ShieldCheck size={18} className="text-emerald-500" />
-          <span className="text-[12px] uppercase tracking-[1.5px] text-white font-black">Protection Sentinel</span>
+      {/* PROTECTION RULES */}
+      <div className="p-4 rounded-xl bg-emerald-500/[0.02] border border-emerald-500/10 space-y-4">
+        <div className="flex items-center gap-2">
+          <ShieldCheck size={14} className="text-emerald-500" />
+          <span className="text-[10px] uppercase tracking-[1.5px] text-white font-black">Règles de Protection</span>
         </div>
         
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           <div className="flex justify-between items-center">
-            <span className="text-[10px] text-[#666] uppercase font-bold">Mode</span>
-            <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">STANDARD</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] text-[#666] uppercase font-bold">Statut</span>
-            <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest flex items-center gap-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              ACTIF
-            </span>
+            <span className="text-[9px] text-[#444] uppercase font-bold">Mode Actif</span>
+            <span className="text-[9px] text-emerald-500 font-black uppercase tracking-widest">{currentMode}</span>
           </div>
           
-          <div className="h-px bg-emerald-500/10 my-2" />
+          <div className="h-px bg-white/5 my-1" />
           
           <ul className="space-y-2">
-            <li className="flex items-center gap-2 text-[10px] text-[#888] font-medium">
-              <div className="w-1 h-1 rounded-full bg-emerald-500" />
-              Limite jour : <span className="text-white ml-auto">-2%</span>
+            <li className="flex items-center justify-between text-[9px] text-[#666] font-medium">
+              <span className="uppercase tracking-widest">Limite Jour</span>
+              <span className="text-white">-2.0%</span>
             </li>
-            <li className="flex items-center gap-2 text-[10px] text-[#888] font-medium">
-              <div className="w-1 h-1 rounded-full bg-emerald-500" />
-              Max trades/h : <span className="text-white ml-auto">5</span>
+            <li className="flex items-center justify-between text-[9px] text-[#666] font-medium">
+              <span className="uppercase tracking-widest">Max Trades/H</span>
+              <span className="text-white">5</span>
             </li>
-            <li className="flex items-center gap-2 text-[10px] text-[#888] font-medium">
-              <div className="w-1 h-1 rounded-full bg-emerald-500" />
-              SL obligatoire : <span className="text-white ml-auto">OUI</span>
+            <li className="flex items-center justify-between text-[9px] text-[#666] font-medium">
+              <span className="uppercase tracking-widest">SL Obligatoire</span>
+              <span className="text-emerald-500">OUI</span>
             </li>
-            <li className="flex items-center gap-2 text-[10px] text-[#888] font-medium">
-              <div className="w-1 h-1 rounded-full bg-emerald-500" />
-              Positions max : <span className="text-white ml-auto">3</span>
+            <li className="flex items-center justify-between text-[9px] text-[#666] font-medium">
+              <span className="uppercase tracking-widest">Positions Max</span>
+              <span className="text-white">3</span>
             </li>
           </ul>
 
-          <div className="h-px bg-emerald-500/10 my-2" />
+          <div className="h-px bg-white/5 my-1" />
           
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-[#666] uppercase font-bold">Niveau de Risque</span>
-            <span className={`text-[10px] font-black uppercase tracking-widest ${getScoreColor(sentinelData.disciplineScore)}`}>
-              Mode {currentMode}
+            <span className="text-[9px] text-[#444] uppercase font-bold">Perte Max Adj.</span>
+            <span className="text-[9px] font-black text-red-500 uppercase tracking-widest">
+              -{adjustedMaxLoss}%
             </span>
           </div>
         </div>
-
-        <button className="w-full py-2.5 rounded-lg bg-white/[0.03] border border-white/5 text-[9px] font-black uppercase tracking-widest text-[#444] hover:text-red-400 hover:border-red-400/20 transition-all">
-          Désactiver temporairement
-        </button>
       </div>
 
-      <p className="text-[10px] text-[#666] leading-relaxed text-center px-4 italic">
-        "Thalamus protège votre capital avec des règles de trading professionnelles pré-configurées."
-      </p>
-
-      {/* DANGER INDEX */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-end">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] uppercase text-[#444]">Danger Index</span>
-          </div>
-          <span className={`text-[24px] font-bold ${sentinelData.dangerIndex && sentinelData.dangerIndex > 70 ? 'text-red-500' : sentinelData.dangerIndex && sentinelData.dangerIndex > 40 ? 'text-[#F59E0B]' : 'text-emerald-500'}`}>
-            {(sentinelData.dangerIndex || 0).toFixed(1)}%
-          </span>
-        </div>
-        <div className="h-1.5 w-full bg-[#1A1A1A] rounded-full overflow-hidden">
-          <div 
-            className={`h-full transition-all duration-500 ${sentinelData.dangerIndex && sentinelData.dangerIndex > 70 ? 'bg-red-500' : sentinelData.dangerIndex && sentinelData.dangerIndex > 40 ? 'bg-[#F59E0B]' : 'bg-emerald-500'}`} 
-            style={{ width: `${sentinelData.dangerIndex || 0}%` }} 
-          />
-        </div>
-      </div>
-
-      {/* SENTINEL METRICS */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="p-4 rounded-lg bg-white/[0.02] border border-[#1A1A1A] space-y-2">
-          <span className="text-[9px] uppercase text-[#444] font-bold block">Conformité</span>
-          <div className="flex items-end gap-1">
-            <span className="text-[20px] font-bold text-[#F5F5F0]">{sentinelData.conformityRate}%</span>
-          </div>
-          <div className="h-1 w-full bg-[#1A1A1A] rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-500" style={{ width: `${sentinelData.conformityRate}%` }} />
-          </div>
-        </div>
-        <div className="p-4 rounded-lg bg-white/[0.02] border border-[#1A1A1A] space-y-2">
-          <span className="text-[9px] uppercase text-[#444] font-bold block">Vigilance</span>
-          <div className="flex items-end gap-1">
-            <span className="text-[20px] font-bold text-[#F5F5F0]">{sentinelData.cognitiveReadiness}%</span>
-          </div>
-          <div className="h-1 w-full bg-[#1A1A1A] rounded-full overflow-hidden">
-            <div className="h-full bg-cyan-500" style={{ width: `${sentinelData.cognitiveReadiness}%` }} />
-          </div>
-        </div>
-      </div>
-
-      {/* DETECTED BIASES */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <ShieldAlert size={14} className="text-[#F59E0B]" />
-          <span className="text-[11px] uppercase tracking-widest font-black text-[#F59E0B]">Biais Cognitifs Actifs</span>
-        </div>
-        <div className="space-y-2">
-          {sentinelData.detectedBiases.slice(0, 2).map(bias => (
-            <div key={bias.id} className="p-3 rounded-lg bg-white/[0.02] border border-[#1A1A1A] flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-bold text-white uppercase">{bias.name}</p>
-                <p className="text-[8px] text-[#444] uppercase">{bias.frequency} de fréquence</p>
-              </div>
-              <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${
-                bias.status === 'critical' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
-                bias.status === 'high' ? 'bg-[#F59E0B]/10 border-[#F59E0B]/20 text-[#F59E0B]' :
-                'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
-              }`}>
-                {bias.status}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* PREDICTIVE ANALYSIS */}
-      <div className="p-5 rounded-lg bg-transparent border border-[#1A1A1A] space-y-3">
-        <div className="flex items-center gap-3">
-          <Zap size={16} strokeWidth={1.5} className="text-emerald-500" />
-          <span className="text-[12px] uppercase tracking-[1.5px] text-[#666]">Analyse Prédictive</span>
-        </div>
-        <p className="text-[11px] text-[#888] leading-relaxed italic">
-          {sentinelData.emotionState.intensity > 50 
-            ? `Votre intensité émotionnelle est élevée (${sentinelData.emotionState.intensity}%). Historiquement, à ce niveau, vous prenez 73% de décisions impulsives dans les 10 prochaines minutes.`
-            : "État cognitif optimal détecté. La probabilité d'erreur émotionnelle est inférieure à 12% pour la prochaine heure."}
-        </p>
-      </div>
-
-      {/* EMOTION STATE */}
-      <div className="p-5 rounded-lg bg-transparent border border-[#1A1A1A] space-y-4">
-        <div className="flex items-center gap-3">
-          <Activity size={16} strokeWidth={1.5} className="text-[#666]" />
-          <span className="text-[12px] uppercase tracking-[1.5px] text-[#666]">État Émotionnel</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-[14px] text-[#888]">{sentinelData.emotionState.dominantEmotion}</span>
-          <span className="text-[24px] font-bold text-[#F5F5F0]">{sentinelData.emotionState.intensity}%</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {sentinelData.emotionState.patterns.map((p, i) => (
-            <span key={i} className="px-2 py-1 rounded bg-transparent border border-[#1A1A1A] text-[11px] uppercase text-[#444]">
-              {p}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* RECENT ALERTS */}
-      <div className="flex-1 space-y-4">
-        <h4 className="text-[12px] uppercase tracking-[1.5px] text-[#666] flex items-center gap-2">
-          <Radar size={12} strokeWidth={1.5} /> Alertes Récentes
+      {/* RECENT INTERVENTIONS */}
+      <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+        <h4 className="text-[10px] uppercase tracking-[2px] text-[#444] flex items-center gap-2 font-black">
+          <Radar size={12} strokeWidth={2} /> Journal Sentinel
         </h4>
-        <div className="space-y-3">
-          {sentinelData.interventions.slice(0, 3).map(inv => (
-            <div key={inv.id} className="flex gap-3">
-              <div className={`w-1 h-8 rounded-full ${inv.type === 'BLOCK' ? 'bg-red-500' : 'bg-[#F59E0B]'}`} />
-              <div className="flex-1">
-                <p className="text-[11px] uppercase text-[#444] leading-none mb-1">{inv.type}</p>
-                <p className="text-[14px] text-[#888] line-clamp-1">{inv.reason}</p>
+        <div className="flex-1 overflow-y-auto no-scrollbar space-y-3">
+          {sentinelData.interventions.length > 0 ? (
+            sentinelData.interventions.slice(0, 5).map(inv => (
+              <div key={inv.id} className="p-3 rounded-lg bg-white/[0.01] border border-white/5 flex gap-3">
+                <div className={`w-0.5 h-full min-h-[24px] rounded-full ${inv.type === 'BLOCK' ? 'bg-red-500' : 'bg-[#F59E0B]'}`} />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-[8px] font-black uppercase tracking-widest ${inv.type === 'BLOCK' ? 'text-red-500' : 'text-[#F59E0B]'}`}>
+                      {inv.type}
+                    </span>
+                    <span className="text-[7px] text-[#333] font-bold uppercase">Il y a 2m</span>
+                  </div>
+                  <p className="text-[10px] text-[#666] leading-tight line-clamp-2">{inv.reason}</p>
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 opacity-20">
+              <ShieldCheck size={24} className="text-[#444] mb-2" />
+              <p className="text-[8px] uppercase tracking-widest text-[#444]">Aucune intervention</p>
             </div>
-          ))}
+          )}
+        </div>
+      </div>
+
+      {/* SYSTEM INFO */}
+      <div className="pt-4 border-t border-white/5">
+        <div className="flex items-center justify-between text-[8px] font-black text-[#222] uppercase tracking-[0.2em]">
+          <span>Version 2.0.4</span>
+          <span>Build: Stable</span>
         </div>
       </div>
     </div>

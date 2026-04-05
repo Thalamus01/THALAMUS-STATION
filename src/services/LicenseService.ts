@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 export interface License {
   id: string;
   userId: string;
+  email: string;
   key: string;
   createdAt: string;
   status: 'ACTIVE' | 'REVOKED' | 'EXPIRED';
@@ -23,7 +24,7 @@ export const LicenseService = {
     return licenses.find(l => l.userId === userId);
   },
 
-  generateLicense: (userId: string, accountNumber: string): License => {
+  generateLicense: (userId: string, accountNumber: string, email: string): License => {
     const licenses = LicenseService.getLicenses();
     
     // Check if user already has a license
@@ -37,6 +38,7 @@ export const LicenseService = {
     const newLicense: License = {
       id: uuidv4(),
       userId,
+      email,
       key,
       createdAt: new Date().toISOString(),
       status: 'ACTIVE',

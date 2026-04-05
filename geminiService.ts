@@ -10,13 +10,13 @@ export const getBehavioralNudge = async (
   lang: Language = 'FR'
 ): Promise<string> => {
   // Offline/Mock mode check
-  if (process.env.NODE_ENV === 'production' || true) {
+  if (!process.env.GEMINI_API_KEY) {
     return lang === 'FR' 
       ? "Votre indice de discipline est en baisse. Souhaites-tu que je réduise la taille de ta position de 50% pour préserver ton capital ?" 
       : "Your discipline index is dropping. Would you like me to reduce your position size by 50% to preserve your capital?";
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
   const prompt = `
     RÔLE: THALAMUS TRADING CONTRÔLE Guardian (Neuro-Finance AI).

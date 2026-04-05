@@ -24,6 +24,7 @@ input string   InpSecretKey = "OWENkeya2015.com";     // Clé Secrète obligatoi
 
 input group "=== SÉCURITÉ ==="
 input int      InpMagic     = 888123;                 // Magic Number Thalamus
+input bool     InpMonitorAll = true;                  // Surveiller TOUS les EAs (Supervision Globale)
 input bool     InpHardLock  = true;                   // Protection Anti-Recul SL
 input double   InpMaxDailyLoss = 5.0;                 // Perte Max Journalière (%)
 
@@ -50,7 +51,7 @@ int OnInit()
    // Création de l'interface visuelle
    CreateDashboard();
    
-   Print("THALAMUS SENTINEL: Initialisation réussie.");
+   Print("THALAMUS SENTINEL: Initialisation réussie. Mode Supervision: ", InpMonitorAll ? "GLOBAL" : "LOCAL");
    return(INIT_SUCCEEDED);
 }
 
@@ -248,8 +249,8 @@ void CheckDailyLoss()
       for(int i = PositionsTotal() - 1; i >= 0; i--) {
          ulong ticket = PositionGetTicket(i);
          if(PositionSelectByTicket(ticket)) {
-            // On ferme tout si HardLock est actif, sinon seulement le Magic Thalamus
-            if(InpHardLock || PositionGetInteger(POSITION_MAGIC) == InpMagic) {
+            // On ferme tout si MonitorAll est actif, sinon seulement le Magic Thalamus
+            if(InpMonitorAll || PositionGetInteger(POSITION_MAGIC) == InpMagic) {
                if(g_trade.PositionClose(ticket)) closed_count++;
             }
          }
@@ -265,7 +266,29 @@ void CheckDailyLoss()
 //+------------------------------------------------------------------+
 void SyncAccountData()
 {
-   // Récupération des symboles du Market Watch
+   // 1. Récupération des positions ouvertes (TOUTES)
+   string positionsJson = "[";
+   int posCount = 0;
+   for(int i=0; i<PositionsTotal(); i++)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket > 0 && PositionSelectByTicket(ticket))
+      {
+         if(posCount > 0) positionsJson += ",";
+         positionsJson += "{";
+         positionsJson += "\"id\":\"" + IntegerToString(ticket) + "\",";
+         positionsJson += "\"symbol\":\"" + PositionGetString(POSITION_SYMBOL) + "\",";
+         positionsJson += "\"side\":\"" + (PositionGetInteger(POSITION_TYPE)==POSITION_TYPE_BUY ? "BUY" : "SELL") + "\",";
+         positionsJson += "\"volume\":" + DoubleToString(PositionGetDouble(POSITION_VOLUME), 2) + ",";
+         positionsJson += "\"profit\":" + DoubleToString(PositionGetDouble(POSITION_PROFIT), 2) + ",";
+         positionsJson += "\"magic\":" + IntegerToString(PositionGetInteger(POSITION_MAGIC));
+         positionsJson += "}";
+         posCount++;
+      }
+   }
+   positionsJson += "]";
+
+   // 2. Récupération des symboles du Market Watch
    string symbolsJson = "[";
    int totalSymbols = SymbolsTotal(true);
    for(int i=0; i<totalSymbols; i++)
@@ -285,6 +308,7 @@ void SyncAccountData()
                  "\"equity\":" + DoubleToString(AccountInfoDouble(ACCOUNT_EQUITY), 2) + "," +
                  "\"profit\":" + DoubleToString(AccountInfoDouble(ACCOUNT_PROFIT), 2) + "," +
                  "\"key\":\"" + InpSecretKey + "\"," +
+                 "\"positions\":" + positionsJson + "," +
                  "\"symbols\":" + symbolsJson + "}";
    
    uchar post_data[], result_data[];

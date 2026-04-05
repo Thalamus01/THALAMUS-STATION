@@ -27,13 +27,14 @@ enum ENUM_CONN_STATUS {
 //--- INPUTS
 input group "=== CONNEXION ==="
 input string   InpAccountID      = "THA-5234-OBA";      // Thalamus ID (CORRECT)
-input string   InpServerUrl      = "https://thalamus-ai.vercel.app/api/trading-data"; // Vercel Bridge URL
+input string   InpServerUrl      = "https://ais-dev-6n3uzutnu4vfywuf7h4xvy-130630791689.europe-west2.run.app/api/trading-data"; // Vercel Bridge URL
 input int      InpTimerMs        = 500;                 // Refresh Interval (ms)
 input string   InpThalamusKey    = "OWENkeya2015.com";  // Secret Key (REQUIRED)
 
 input group "=== PROTECTIONS ==="
 input bool     InpAntiReculActive = true;               // SL Hard-Lock Active
-input int      InpMagicNumber    = 888123;              // Magic Number
+input bool     InpMonitorAll      = true;               // Surveiller TOUS les EAs (Supervision Globale)
+input int      InpMagicNumber    = 888123;              // Magic Number Thalamus
 input double   InpMaxDailyLoss   = 5.0;                 // Max Daily Loss %
 
 //--- CONSTANTS
@@ -68,7 +69,7 @@ int OnInit()
    // Set Timers
    if(!EventSetMillisecondTimer(InpTimerMs)) return(INIT_FAILED);
    
-   Print("THALAMUS SENTINEL: Initialized.");
+   Print("THALAMUS SENTINEL: Initialized. Mode: ", InpMonitorAll ? "GLOBAL" : "LOCAL");
    return(INIT_SUCCEEDED);
 }
 
@@ -231,6 +232,29 @@ void ConfirmOrder(string cmd_id, ulong ticket)
 //+------------------------------------------------------------------+
 void SyncAccountData()
 {
+   // 1. Récupération des positions ouvertes (TOUTES)
+   string positionsJson = "[";
+   int posCount = 0;
+   for(int i=0; i<PositionsTotal(); i++)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(ticket > 0 && PositionSelectByTicket(ticket))
+      {
+         if(posCount > 0) positionsJson += ",";
+         positionsJson += "{";
+         positionsJson += "\"id\":\"" + IntegerToString(ticket) + "\",";
+         positionsJson += "\"symbol\":\"" + PositionGetString(POSITION_SYMBOL) + "\",";
+         positionsJson += "\"side\":\"" + (PositionGetInteger(POSITION_TYPE)==POSITION_TYPE_BUY ? "BUY" : "SELL") + "\",";
+         positionsJson += "\"volume\":" + DoubleToString(PositionGetDouble(POSITION_VOLUME), 2) + ",";
+         positionsJson += "\"profit\":" + DoubleToString(PositionGetDouble(POSITION_PROFIT), 2) + ",";
+         positionsJson += "\"magic\":" + IntegerToString(PositionGetInteger(POSITION_MAGIC));
+         positionsJson += "}";
+         posCount++;
+      }
+   }
+   positionsJson += "]";
+
+   // 2. Récupération des symboles du Market Watch
    string symbolsJson = "[";
    int totalSymbols = SymbolsTotal(true);
    for(int i=0; i<totalSymbols; i++)
@@ -250,6 +274,7 @@ void SyncAccountData()
                  "\"equity\":" + DoubleToString(AccountInfoDouble(ACCOUNT_EQUITY), 2) + "," +
                  "\"profit\":" + DoubleToString(AccountInfoDouble(ACCOUNT_PROFIT), 2) + "," +
                  "\"key\":\"" + InpThalamusKey + "\"," +
+                 "\"positions\":" + positionsJson + "," +
                  "\"symbols\":" + symbolsJson + "}";
    
    uchar post_data[], result_data[];
@@ -329,13 +354,18 @@ void CheckDailyLoss()
    double loss_pct = (balance - equity) / balance * 100.0;
    
    if(loss_pct >= InpMaxDailyLoss) {
+      int closed_count = 0;
       for(int i = PositionsTotal() - 1; i >= 0; i--) {
          ulong ticket = PositionGetTicket(i);
          if(PositionSelectByTicket(ticket)) {
-            if(PositionGetInteger(POSITION_MAGIC) == InpMagicNumber) g_trade.PositionClose(ticket);
+            if(InpMonitorAll || PositionGetInteger(POSITION_MAGIC) == InpMagicNumber) {
+               if(g_trade.PositionClose(ticket)) closed_count++;
+            }
          }
       }
-      Print("THALAMUS: Max Daily Loss Reached. All positions closed.");
+      if(closed_count > 0) {
+         Print("THALAMUS: Max Daily Loss Reached. ", closed_count, " positions closed.");
+      }
    }
 }
 

@@ -21,7 +21,11 @@ import {
   FileText,
   Copy,
   ExternalLink,
-  Monitor
+  Monitor,
+  Brain,
+  Cpu,
+  CheckCircle2,
+  XCircle
 } from 'lucide-react';
 import { LicenseService, License } from '../services/LicenseService';
 
@@ -53,16 +57,17 @@ const FadeUp = ({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 export const CameleonLanding: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [accountNumber, setAccountNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [generatedLicense, setGeneratedLicense] = useState<License | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleGenerate = () => {
-    if (!accountNumber) return;
+    if (!accountNumber || !email) return;
     setIsGenerating(true);
     // Simulate API call
     setTimeout(() => {
-      const license = LicenseService.generateLicense('current-user-id', accountNumber);
+      const license = LicenseService.generateLicense('current-user-id', accountNumber, email);
       setGeneratedLicense(license);
       setIsGenerating(false);
     }, 1500);
@@ -110,29 +115,41 @@ export const CameleonLanding: React.FC<{ onBack?: () => void }> = ({ onBack }) =
                   </p>
                   
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">Numéro de compte MT5</label>
-                    <input 
-                      type="text" 
-                      placeholder="Ex: 12345678"
-                      value={accountNumber}
-                      onChange={(e) => setAccountNumber(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-white focus:border-emerald-500/50 outline-none transition-all font-mono"
-                    />
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">Votre Email</label>
+                      <input 
+                        type="email" 
+                        placeholder="Ex: trader@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-white focus:border-emerald-500/50 outline-none transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500">Numéro de compte MT5</label>
+                      <input 
+                        type="text" 
+                        placeholder="Ex: 12345678"
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-white focus:border-emerald-500/50 outline-none transition-all font-mono"
+                      />
+                    </div>
                   </div>
 
                   <button 
                     onClick={handleGenerate}
-                    disabled={!accountNumber || isGenerating}
+                    disabled={!accountNumber || !email || isGenerating}
                     className="w-full py-5 bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-black font-black uppercase tracking-widest rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
                   >
                     {isGenerating ? (
                       <>
                         <RefreshCw size={18} className="animate-spin" />
-                        Génération en cours...
+                        Activation en cours...
                       </>
                     ) : (
                       <>
-                        Générer ma licence <ArrowRight size={18} />
+                        Activer ma licence <ArrowRight size={18} />
                       </>
                     )}
                   </button>
@@ -206,9 +223,12 @@ export const CameleonLanding: React.FC<{ onBack?: () => void }> = ({ onBack }) =
           <div className="flex items-center gap-6">
             <button className="hidden md:block text-sm font-medium text-slate-400 hover:text-white transition">L'APPROCHE</button>
             <button className="hidden md:block text-sm font-medium text-slate-400 hover:text-white transition">L'OFFRE</button>
-            <a href="#demo" className="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[11px] font-black uppercase tracking-widest transition-all">
-              DÉMO GRATUITE
-            </a>
+            <button 
+              onClick={() => setShowAccessModal(true)}
+              className="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[11px] font-black uppercase tracking-widest transition-all"
+            >
+              ACTIVER MA LICENCE
+            </button>
           </div>
         </div>
       </nav>
@@ -235,9 +255,12 @@ export const CameleonLanding: React.FC<{ onBack?: () => void }> = ({ onBack }) =
             </p>
 
             <div className="mt-12 flex flex-col md:flex-row items-center justify-center gap-4">
-              <a href="#demo" className="w-full md:w-auto px-10 py-4 bg-emerald-500 hover:bg-emerald-600 text-black font-black uppercase tracking-widest rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]">
-                Sécuriser mon capital
-              </a>
+              <button 
+                onClick={() => setShowAccessModal(true)}
+                className="w-full md:w-auto px-10 py-4 bg-emerald-500 hover:bg-emerald-600 text-black font-black uppercase tracking-widest rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Activer ma licence
+              </button>
               <button className="w-full md:w-auto px-10 py-4 bg-white/5 hover:bg-white/10 text-white font-black uppercase tracking-widest rounded-xl border border-white/10 transition-all">
                 Voir la vérité
               </button>
@@ -393,7 +416,112 @@ export const CameleonLanding: React.FC<{ onBack?: () => void }> = ({ onBack }) =
         </div>
       </section>
 
-      {/* Section 6: Deux Chemins */}
+      {/* Section 6: Neural Supervision */}
+      <section className="py-40 bg-black relative overflow-hidden border-y border-white/5">
+        <div className="max-w-6xl mx-auto px-6 relative">
+          <div className="absolute inset-0 bg-emerald-500/5 blur-[120px] rounded-full -translate-y-1/2"></div>
+          <div className="grid md:grid-cols-2 gap-20 items-center relative z-10">
+            <FadeUp>
+              <div className="inline-flex items-center gap-2 px-4 py-1 bg-emerald-500/10 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-8 border border-emerald-500/20">
+                <Brain size={12} /> Neural Bridge
+              </div>
+              <h2 className="text-4xl md:text-6xl font-black mb-10 tracking-tighter leading-tight uppercase">
+                Le Co-Pilote <span className="text-emerald-500">Neural</span> pour MT5
+              </h2>
+              <p className="text-xl text-slate-400 font-light mb-12 leading-relaxed">
+                Gardez votre interface MT5 habituelle. Thalamus s'installe en arrière-plan comme une <span className="text-white font-bold">Conscience Artificielle</span>. 
+                Il surveille vos biais, votre stress, et intervient uniquement quand vous perdez le contrôle.
+              </p>
+              
+              <div className="space-y-8">
+                <div className="flex gap-6">
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                    <Brain className="text-emerald-500" size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-black uppercase text-white mb-2">Conseiller Comportemental</h4>
+                    <p className="text-slate-500 text-sm">Thalamus analyse vos patterns sur MT5 et vous alerte par notification vocale ou visuelle dès qu'un biais cognitif (FOMO, Greed) est détecté.</p>
+                  </div>
+                </div>
+                <div className="flex gap-6">
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                    <ShieldAlert className="text-red-500" size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-black uppercase text-white mb-2">Garde-Fou Exécutif</h4>
+                    <p className="text-slate-500 text-sm">Le "Kill Switch" ne se déclenche que si vous violez vos propres règles de survie. Thalamus est le rempart ultime contre l'autodestruction.</p>
+                  </div>
+                </div>
+              </div>
+            </FadeUp>
+            
+            <FadeUp>
+              <div className="relative group">
+                <div className="absolute inset-0 bg-emerald-500/20 blur-[100px] group-hover:bg-emerald-500/30 transition-all duration-1000"></div>
+                <div className="relative bg-slate-900/50 border border-white/10 rounded-[40px] p-8 backdrop-blur-3xl shadow-2xl">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Thalamus Neural Bridge Active</span>
+                    </div>
+                    <Cpu className="text-emerald-500" size={20} />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-black text-[10px]">B</div>
+                        <span className="text-xs font-black text-white uppercase">XAUUSD Buy 1.00</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-emerald-500">
+                        <CheckCircle2 size={12} />
+                        <span className="text-[9px] font-black uppercase">Autorisé</span>
+                      </div>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 font-black text-[10px]">S</div>
+                        <span className="text-xs font-black text-white uppercase">NAS100 Sell 2.50</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-red-500">
+                        <XCircle size={12} />
+                        <span className="text-[9px] font-black uppercase">Bloqué</span>
+                      </div>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-between opacity-50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-black text-[10px]">B</div>
+                        <span className="text-xs font-black text-white uppercase">EURUSD Buy 0.50</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-emerald-500">
+                        <CheckCircle2 size={12} />
+                        <span className="text-[9px] font-black uppercase">Autorisé</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-8 pt-6 border-t border-white/5 flex justify-between items-center">
+                    <div className="text-center">
+                      <p className="text-[8px] font-black text-slate-600 uppercase mb-1">Discipline</p>
+                      <p className="text-xl font-black italic text-emerald-500">88%</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[8px] font-black text-slate-600 uppercase mb-1">Risque Max</p>
+                      <p className="text-xl font-black italic text-white">0.5%</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[8px] font-black text-slate-600 uppercase mb-1">Status EA</p>
+                      <p className="text-xl font-black italic text-cyan-400">SYNC</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </FadeUp>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 7: Deux Chemins */}
       <section className="py-32 bg-neutral-950">
         <div className="max-w-6xl mx-auto px-6">
           <FadeUp>
@@ -465,6 +593,10 @@ export const CameleonLanding: React.FC<{ onBack?: () => void }> = ({ onBack }) =
                     Support Prioritaire
                   </li>
                   <li className="flex items-center gap-4 text-slate-300">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center"><Cpu size={16} className="text-emerald-500" /></div>
+                    Supervision Thalamus Temps Réel
+                  </li>
+                  <li className="flex items-center gap-4 text-slate-300">
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center"><RefreshCw size={16} className="text-emerald-500" /></div>
                     Mises à jour à vie
                   </li>
@@ -476,17 +608,13 @@ export const CameleonLanding: React.FC<{ onBack?: () => void }> = ({ onBack }) =
                 
                 <div className="flex flex-col justify-center space-y-6">
                   <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex justify-between items-center group hover:border-emerald-500/50 transition-all cursor-pointer">
-                    <span className="font-bold text-slate-400 group-hover:text-white">3 MOIS</span>
-                    <span className="text-xl font-black">297€</span>
-                  </div>
-                  <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex justify-between items-center group hover:border-emerald-500/50 transition-all cursor-pointer">
-                    <span className="font-bold text-slate-400 group-hover:text-white">6 MOIS</span>
-                    <span className="text-xl font-black">497€</span>
+                    <span className="font-bold text-slate-400 group-hover:text-white">1 MOIS</span>
+                    <span className="text-xl font-black">178€</span>
                   </div>
                   <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex justify-between items-center group hover:bg-emerald-500/20 transition-all cursor-pointer relative">
-                    <div className="absolute -top-3 right-6 px-3 py-1 bg-emerald-500 text-black text-[8px] font-black uppercase tracking-widest rounded-full">RECOMMANDÉ</div>
+                    <div className="absolute -top-3 right-6 px-3 py-1 bg-emerald-500 text-black text-[8px] font-black uppercase tracking-widest rounded-full">RECOMMANDÉ (-20%)</div>
                     <span className="font-bold text-emerald-400">12 MOIS</span>
-                    <span className="text-xl font-black text-emerald-400">797€</span>
+                    <span className="text-xl font-black text-emerald-400">1708€</span>
                   </div>
                 </div>
               </div>
@@ -495,7 +623,7 @@ export const CameleonLanding: React.FC<{ onBack?: () => void }> = ({ onBack }) =
         </div>
       </section>
 
-      {/* Section 9: CTA Démo */}
+      {/* Section 9: CTA Activation */}
       <section id="demo" className="py-32 bg-black">
         <div className="max-w-4xl mx-auto px-6">
           <FadeUp>
@@ -503,17 +631,17 @@ export const CameleonLanding: React.FC<{ onBack?: () => void }> = ({ onBack }) =
               <div className="absolute inset-0 bg-black/5 pointer-events-none"></div>
               <div className="relative z-10">
                 <div className="inline-flex items-center gap-2 px-4 py-1 bg-black/10 rounded-full text-[10px] font-black uppercase tracking-widest mb-8">
-                  <Gift size={12} /> Démo Gratuite 30 Jours
+                  <Lock size={12} /> Accès Sécurisé
                 </div>
-                <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tighter">DÉMARRER LA DÉMO GRATUITE</h2>
+                <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tighter uppercase">Activer ma licence</h2>
                 <p className="text-xl font-medium mb-12 opacity-80 max-w-xl mx-auto">
-                  Testez la puissance de la protection Caméléon sans aucun risque. Sans CB, sans engagement.
+                  Rejoignez les traders qui ont choisi la survie algorithmique. Activation instantanée après validation.
                 </p>
                 <button 
                   onClick={() => setShowAccessModal(true)}
                   className="px-12 py-5 bg-black text-white font-black uppercase tracking-widest rounded-2xl hover:scale-105 transition-all flex items-center gap-3 mx-auto shadow-2xl"
                 >
-                  Activer ma démo <ArrowRight size={20} />
+                  Activer ma licence <ArrowRight size={20} />
                 </button>
                 <p className="mt-8 text-xs font-bold opacity-60 uppercase tracking-widest">Installation en 5 minutes sur MT5</p>
               </div>

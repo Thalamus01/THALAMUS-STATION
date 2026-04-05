@@ -375,6 +375,7 @@ const AdminDashboard: React.FC<Props> = ({ onClose }) => {
                   <tr className="border-b border-white/5 bg-slate-950/50">
                     <th className="px-8 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Licence Key</th>
                     <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Trader ID</th>
+                    <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Email Achat</th>
                     <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Compte MT5</th>
                     <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Date Création</th>
                     <th className="px-6 py-5 text-[9px] font-black uppercase text-slate-500 tracking-widest">Statut</th>
@@ -385,6 +386,7 @@ const AdminDashboard: React.FC<Props> = ({ onClose }) => {
                   {licenses.filter(l => 
                     l.key.toLowerCase().includes(searchTerm.toLowerCase()) || 
                     l.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    l.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     l.accountNumber?.includes(searchTerm)
                   ).map((license) => (
                     <tr key={license.id} className="group hover:bg-white/5 transition-all">
@@ -396,6 +398,9 @@ const AdminDashboard: React.FC<Props> = ({ onClose }) => {
                       </td>
                       <td className="px-6 py-6">
                         <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{license.userId}</span>
+                      </td>
+                      <td className="px-6 py-6">
+                        <span className="text-[10px] font-bold text-slate-400">{license.email}</span>
                       </td>
                       <td className="px-6 py-6">
                         <span className="text-sm font-mono font-bold text-white">{license.accountNumber || '---'}</span>
